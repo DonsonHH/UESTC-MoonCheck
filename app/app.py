@@ -14,6 +14,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from storage import Store, now, DEFAULT_SETTINGS, preparation_start
 from service import Service, minutes
 from planning import daily_plan, plan_datetime
+from notifications import NotificationError, send_feishu, validate_webhook
 
 def create_app(data_dir=None, start_scheduler=False, portal_factory=None):
     app = Flask(__name__)
@@ -238,6 +239,47 @@ def create_app(data_dir=None, start_scheduler=False, portal_factory=None):
         with mutation():
             owned(aid)
             store.delete(aid)
+        return jsonify(ok=True)
+
+    def notification_public(config):
+        return {k:config[k] for k in ('enabled', 'webhook', 'last_status', 'last_at')} | {'has_secret': bool(config['secret'])}
+
+    @app.get('/api/notifications')
+    def notifications_get():
+        return jsonify(notification_public(store.notification_settings(g.user['id'])))
+
+    @app.post('/api/notifications')
+    def notifications_save():
+        data = request.get_json() or {}
+        if not isinstance(data, dict):
+            raise ValueError('推送设置格式不正确。')
+        previous = store.notification_settings(g.user['id'])
+        config = {'enabled': data.get('enabled') is True,
+                  'webhook': validate_webhook(data.get('webhook', previous['webhook'])),
+                  'secret': previous['secret']}
+        if data.get('clear_secret'):
+            config['secret'] = ''
+        elif data.get('secret'):
+            secret = str(data['secret']).strip()
+            if len(secret) > 256 or any(c in secret for c in ('\r', '\n', '\x00')):
+                raise ValueError('签名密钥格式不正确。')
+            config['secret'] = secret
+        if config['enabled'] and not config['webhook']:
+            raise ValueError('请填写推送地址后再开启。')
+        store.save_notification_settings(g.user['id'], config)
+        return jsonify(notification_public(store.notification_settings(g.user['id'])))
+
+    @app.post('/api/notifications/test')
+    def notifications_test():
+        config = store.notification_settings(g.user['id'])
+        if not config['enabled']:
+            raise ValueError('请先开启并保存飞书推送。')
+        try:
+            send_feishu(config, 'MoonCheck · 测试通知\n飞书推送已连接。')
+        except NotificationError:
+            store.notification_status(g.user['id'], 'failed')
+            raise
+        store.notification_status(g.user['id'], 'sent')
         return jsonify(ok=True)
 
     @app.post('/api/settings')

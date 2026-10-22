@@ -5,6 +5,7 @@ from concurrent.futures import ThreadPoolExecutor
 from portal import Portal, PortalError
 from storage import now, stamp, DEFAULT_SETTINGS
 from planning import daily_plan, randomized_location
+from notifications import NotificationDispatcher
 
 log = logging.getLogger(__name__)
 
@@ -53,6 +54,7 @@ class Service:
         self.busy = None
         self.scheduler_thread = None
         self.scheduler_error = False
+        self.notifier = NotificationDispatcher(store)
 
     def enqueue(self, aid, action, preparation_for=None, scheduled=False):
         if action not in ('probe', 'checkin'):
@@ -163,6 +165,11 @@ class Service:
             state.update(last_outcome=outcome, last_message=message, updated_at=stamp())
             self.store.save_account(a)
             self.store.event(a, action, outcome, message)
+            if action == 'checkin':
+                try:
+                    self.notifier.enqueue(a, outcome, message, stamp())
+                except Exception:
+                    log.warning('Could not queue Feishu notification; school result unchanged')
 
     def tick(self):
         current = now()
@@ -201,3 +208,4 @@ class Service:
     def close(self):
         self.stop.set()
         self.executor.shutdown(wait=True)
+        self.notifier.close()

@@ -50,6 +50,7 @@ class Store:
                 CREATE TABLE IF NOT EXISTS events (id INTEGER PRIMARY KEY AUTOINCREMENT, at TEXT, account_id TEXT, name TEXT, action TEXT, outcome TEXT, message TEXT);
                 CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, username TEXT NOT NULL COLLATE NOCASE UNIQUE, password_hash TEXT NOT NULL, role TEXT NOT NULL, active INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL, settings TEXT NOT NULL);
                 CREATE TABLE IF NOT EXISTS presets (id TEXT PRIMARY KEY, data TEXT NOT NULL);
+                CREATE TABLE IF NOT EXISTS notifications (owner_id TEXT PRIMARY KEY, config TEXT NOT NULL, last_status TEXT NOT NULL DEFAULT '', last_at TEXT NOT NULL DEFAULT '');
             ''')
             if 'auth_version' not in {r['name'] for r in db.execute('PRAGMA table_info(users)')}:
                 db.execute('ALTER TABLE users ADD COLUMN auth_version INTEGER NOT NULL DEFAULT 0')
@@ -145,6 +146,23 @@ class Store:
     def set_user_active(self, uid, active):
         with self.db() as db:
             db.execute("UPDATE users SET active=?,auth_version=auth_version+1 WHERE id=? AND role!='superadmin'", (int(active), uid))
+
+    def notification_settings(self, uid):
+        with self.db() as db:
+            row = db.execute('SELECT * FROM notifications WHERE owner_id=?', (uid,)).fetchone()
+        if not row:
+            return {'enabled': False, 'webhook': '', 'secret': '', 'last_status': '', 'last_at': ''}
+        config = json.loads(self.cipher.decrypt(row['config'].encode()))
+        return {**config, 'last_status': row['last_status'], 'last_at': row['last_at']}
+
+    def save_notification_settings(self, uid, config):
+        encrypted = self.cipher.encrypt(json.dumps({k:config[k] for k in ('enabled', 'webhook', 'secret')}, ensure_ascii=False).encode()).decode()
+        with self.db() as db:
+            db.execute("INSERT INTO notifications(owner_id,config) VALUES (?,?) ON CONFLICT(owner_id) DO UPDATE SET config=excluded.config,last_status='',last_at=''", (uid, encrypted))
+
+    def notification_status(self, uid, status):
+        with self.db() as db:
+            db.execute('UPDATE notifications SET last_status=?,last_at=? WHERE owner_id=?', (status, stamp(), uid))
 
     def presets(self):
         with self.db() as db:

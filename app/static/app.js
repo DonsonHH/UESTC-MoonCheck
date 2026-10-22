@@ -5,6 +5,7 @@ const csrf = $('meta[name="csrf-token"]').content;
 let state = null, view = 'overview', polling = false, timer, serverOffset = 0, scheduleDirty=false;
 let accountBaseline='',presetBaseline='';
 let renderedDay='';
+let notificationDirty=false;
 function formSnapshot(f){return JSON.stringify([...new FormData(f)]);}
 function buttonBusy(btn,text){const original=btn.innerHTML;btn.disabled=true;btn.innerHTML=icon('loader-circle')+text;btn.classList.add('is-loading');return ()=>{btn.innerHTML=original;btn.disabled=false;btn.classList.remove('is-loading');};}
 function requestClose(dialog,form,baseline){if(formSnapshot(form)!==baseline)confirmAction('放弃修改？','修改尚未保存。',()=>dialog.close(),'放弃修改',true);else dialog.close();}
@@ -32,6 +33,7 @@ function go(next){
   $$('.nav-item').forEach(el=>el.classList.toggle('active',el.dataset.view===next));
   $('#page-title').textContent=titles[next]; history.replaceState(null,'','#'+next); window.scrollTo({top:0,behavior:'smooth'});
   if(next==='admin')loadAdmin();
+  if(next==='schedule')loadNotifications();
 }
 $$('.nav-item').forEach(el=>el.addEventListener('click',()=>go(el.dataset.view)));
 $$('[data-go]').forEach(el=>el.addEventListener('click',()=>go(el.dataset.go)));
@@ -102,8 +104,8 @@ async function load(initial=false){
   finally{polling=false;}
 }
 $('#refresh').addEventListener('click',async()=>{const btn=$('#refresh'),done=buttonBusy(btn,'刷新中…');try{await load();}finally{done();}});
-async function logout(){try{await api('/api/logout','POST',{});scheduleDirty=false;location.assign('/login');}catch(e){toast(e.message,true);}}
-['#logout','#logout-mobile'].forEach(selector=>$(selector).addEventListener('click',()=>{if(scheduleDirty)confirmAction('退出登录？','还有未保存的修改。',logout,'退出登录');else logout();}));
+async function logout(){try{await api('/api/logout','POST',{});scheduleDirty=false;notificationDirty=false;location.assign('/login');}catch(e){toast(e.message,true);}}
+['#logout','#logout-mobile'].forEach(selector=>$(selector).addEventListener('click',()=>{if(scheduleDirty||notificationDirty)confirmAction('退出登录？','还有未保存的修改。',logout,'退出登录');else logout();}));
 setInterval(()=>{
   const instant=current();
   $('#clock').textContent=instant.toLocaleTimeString('en-GB',{timeZone:'Asia/Shanghai',hour:'2-digit',minute:'2-digit',hour12:false});
@@ -149,6 +151,49 @@ $('#schedule-form').addEventListener('submit',async e=>{
   try{await api('/api/settings','POST',data);scheduleDirty=false;$('#schedule-unsaved').classList.add('hidden');await load();toast('已保存');}catch(e){toast(e.message,true);}finally{restore();}
 });
 let confirmCallback=null;
+function notificationStatus(config){
+  if(!config.enabled)return '未开启';
+  if(config.last_status==='sent')return `最近推送成功 · ${prettyTime(config.last_at)}`;
+  if(config.last_status==='failed')return '最近推送失败，可发送测试查看原因';
+  return '已开启';
+}
+function fillNotifications(config){
+  const form=$('#notification-form');
+  form.elements.enabled.checked=config.enabled;
+  form.elements.webhook.value=config.webhook||'';
+  form.elements.webhook.required=config.enabled;
+  form.elements.secret.value='';form.elements.secret.disabled=false;
+  form.elements.clear_secret.checked=false;
+  $('#notification-clear-secret').classList.toggle('hidden',!config.has_secret);
+  $('#notification-secret-hint').textContent=config.has_secret?'（已保存，留空不修改）':'（选填）';
+  $('#notification-status').textContent=notificationStatus(config);
+  $('#notification-test').disabled=!config.enabled;
+}
+async function loadNotifications(){
+  try{const config=await api('/api/notifications');if(!notificationDirty)fillNotifications(config);}
+  catch(e){$('#notification-status').textContent='推送设置加载失败，请稍后重试';}
+}
+$('#notification-form').addEventListener('input',()=>{
+  notificationDirty=true;
+  const form=$('#notification-form');
+  form.elements.webhook.required=form.elements.enabled.checked;
+  form.elements.secret.disabled=form.elements.clear_secret.checked;
+  $('#notification-status').textContent='有未保存的修改';
+  $('#notification-test').disabled=true;
+});
+$('#notification-form').addEventListener('submit',async e=>{
+  e.preventDefault();const form=e.currentTarget,data=Object.fromEntries(new FormData(form));
+  data.enabled=form.elements.enabled.checked;data.clear_secret=form.elements.clear_secret.checked;
+  const restore=buttonBusy(form.querySelector('[type=submit]'),'保存中…');
+  try{const config=await api('/api/notifications','POST',data);notificationDirty=false;fillNotifications(config);toast('推送设置已保存');}
+  catch(e){toast(e.message,true);}finally{restore();}
+});
+$('#notification-test').addEventListener('click',async()=>{
+  if(notificationDirty){toast('请先保存推送设置');return;}
+  const restore=buttonBusy($('#notification-test'),'发送中…');
+  try{await api('/api/notifications/test','POST',{});await loadNotifications();toast('测试消息已发送');}
+  catch(e){$('#notification-status').textContent=e.message;toast(e.message,true);}finally{restore();}
+});
 function confirmAction(title,message,callback,label='确认',danger=false){$('#confirm-title').textContent=title;$('#confirm-message').textContent=message;$('#confirm-ok').textContent=label;$('#confirm-ok').classList.toggle('destructive',danger);confirmCallback=callback;$('#confirm-dialog').showModal();}
 $$('.cancel-confirm').forEach(el=>el.addEventListener('click',()=>{$('#confirm-dialog').close();confirmCallback=null;}));
 $('#confirm-ok').addEventListener('click',()=>{const cb=confirmCallback;confirmCallback=null;$('#confirm-dialog').close();if(cb)cb();});
@@ -217,6 +262,7 @@ $('#locate').addEventListener('click',()=>{
     btn.disabled=false;btn.innerHTML=icon('locate-fixed')+'获取当前位置';
   },err=>{toast(({1:'定位权限被拒绝，请允许定位或手动输入坐标',2:'无法获取位置，请手动输入实际坐标',3:'定位超时，请重试或手动输入坐标'})[err.code]||'定位失败',true);btn.disabled=false;btn.innerHTML=icon('locate-fixed')+'获取当前位置';},{enableHighAccuracy:true,timeout:20000,maximumAge:0});
 });
-window.addEventListener('beforeunload',e=>{if(scheduleDirty || (accountDialog.open && formSnapshot(accountForm)!==accountBaseline) || (isAdmin && $('#preset-dialog').open && formSnapshot($('#preset-form'))!==presetBaseline)){e.preventDefault();e.returnValue='';}});
+window.addEventListener('beforeunload',e=>{if(scheduleDirty || notificationDirty || (accountDialog.open && formSnapshot(accountForm)!==accountBaseline) || (isAdmin && $('#preset-dialog').open && formSnapshot($('#preset-form'))!==presetBaseline)){e.preventDefault();e.returnValue='';}});
 go(Object.hasOwn(titles,location.hash.slice(1))?location.hash.slice(1):'overview');
 load(true);
+loadNotifications();
