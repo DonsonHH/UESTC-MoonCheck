@@ -1,0 +1,66 @@
+name: mooncheck
+x-runtime: &runtime
+  image: mooncheck-web:local
+  build: ./app
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+services:
+  init:
+    <<: *runtime
+    user: "0:0"
+    restart: "no"
+    volumes:
+      - ./data:/app/data
+    entrypoint: ["python", "-c"]
+    command:
+      - |
+        import os
+        from pathlib import Path
+        p = Path('/app/data')
+        p.mkdir(exist_ok=True)
+        os.chown(p, 10001, 10001)
+        os.chmod(p, 0o700)
+        for f in p.iterdir():
+            if f.is_file() and not f.is_symlink():
+                os.chown(f, 10001, 10001)
+                os.chmod(f, 0o600)
+  app:
+    <<: *runtime
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 5m
+    depends_on:
+      init:
+        condition: service_completed_successfully
+    environment:
+      MOONCHECK_TRUSTED_HOSTS: "localhost,127.0.0.1,${DOMAIN:-localhost}"
+      MOONCHECK_SECURE_COOKIE: "${SECURE_COOKIE:-0}"
+      MOONCHECK_SETUP_TOKEN: "${SETUP_TOKEN:?请先运行 bash mooncheck.sh start，或按说明填写 .env}"
+    volumes:
+      - ./data:/app/data
+  gateway:
+    image: caddy:2.11.7-alpine
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_healthy
+    environment:
+      SITE_ADDRESS: "${SITE_ADDRESS:-http://localhost}"
+    ports:
+      - "${BIND_IP:-127.0.0.1}:${HTTP_PORT:-8080}:80"
+      - "${BIND_IP:-127.0.0.1}:${HTTPS_PORT:-8443}:443"
+    volumes:
+      - ./gateway/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+volumes:
+  caddy_data:
+  caddy_config:

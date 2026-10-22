@@ -1,0 +1,42 @@
+# Actual configuration and credentials
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.p12
+*.pfx
+
+# Runtime data, backups and exports
+data/
+backups/
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+*.csv
+*.tar
+*.tar.gz
+*.tgz
+*.zip
+
+# Development and generated files
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+work/
+*.log
+*.pid
+*.lock
+*.bak
+*.tmp
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+Desktop.ini
+*~
