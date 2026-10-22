@@ -164,6 +164,8 @@ class Service:
                 a['cookies'] = portal.cookies()
                 a.pop('session_cookie', None)
                 portal.close()
+            if outcome in ('connected', 'success', 'already_done'):
+                state.pop('blocked_date', None)
             state.update(last_outcome=outcome, last_message=message, updated_at=stamp())
             self.store.save_account(a)
             self.store.event(a, action, outcome, message)
