@@ -230,7 +230,6 @@ def create_app(data_dir=None, start_scheduler=False, portal_factory=None):
                 raise ValueError('坐标系不正确')
             # Browser coordinates are WGS84. Client converts them to GCJ02 before saving.
             a.update(coordinate_system=loc.get('coordinate_system', 'gcj02'), browser_location=mode == 'manual' and data.get('browser_location') is True, location_duration_ms=min(max(int(data.get('location_duration_ms') or 0), 0), 600000) if mode == 'manual' else 0)
-            a['state'].pop('blocked_date', None)
             store.save_account(a)
         return jsonify(ok=True, id=a['id'])
 

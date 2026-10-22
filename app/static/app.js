@@ -66,7 +66,7 @@ function nextPlan(){
   const clock=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Shanghai',hour:'2-digit',minute:'2-digit',hour12:false}).format(current());
   const allDone=enabled.every(a=>a.state?.success_date===day);
   if(clock>=cfg.window_end || allDone)return [cfg.time,'明天（预计）'];
-  const eligible=enabled.filter(a=>a.state?.success_date!==day && a.state?.blocked_date!==day && !(a.state?.attempt_date===day && a.state?.attempt_count>=cfg.max_attempts));
+  const eligible=enabled.filter(a=>a.state?.success_date!==day && !(a.state?.attempt_date===day && a.state?.attempt_count>=cfg.max_attempts));
   if(!eligible.length)return ['已结束','请查看打卡记录'];
   const cutoff=new Date(`${day}T${cfg.window_end}:00+08:00`).getTime();
   const waits=eligible.map(a=>{const retry=a.state?.attempt_date===day;return {retry,at:new Date(retry?a.next_retry_at:a.planned_checkin_at).getTime()};}).filter(x=>Number.isFinite(x.at)&&x.at<cutoff).sort((a,b)=>a.at-b.at);

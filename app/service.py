@@ -16,7 +16,7 @@ def due(account, settings, current, plan=None):
         return False
     day = current.date().isoformat()
     state = account.get('state', {})
-    if state.get('success_date') == day or state.get('blocked_date') == day:
+    if state.get('success_date') == day:
         return False
     t = current.hour * 3600 + current.minute * 60 + current.second
     target = plan['target_second'] if plan else minutes(settings['time'])*60
@@ -39,7 +39,7 @@ def preparation_day(account, settings, current, plan_factory=None):
         base = midnight + timedelta(days=offset)
         day = base.date().isoformat()
         target = base + timedelta(seconds=plan_factory(day)['target_second'] if plan_factory else minutes(settings['time'])*60)
-        if target-timedelta(minutes=30) <= current < target and day not in (state.get('preparation_date'),state.get('success_date'),state.get('blocked_date')):
+        if target-timedelta(minutes=30) <= current < target and day not in (state.get('preparation_date'),state.get('success_date')):
             return day
     return None
 
@@ -110,8 +110,7 @@ class Service:
             if today.get('businessDate') != day:
                 raise PortalError('暂时无法确认今日状态，请稍后再试。', 'pending')
             if today.get('abnormalFlag'):
-                state['blocked_date'] = day
-                raise PortalError('打卡记录异常，今日自动打卡已暂停，请到学校网站核实。', 'abnormal')
+                raise PortalError('打卡记录异常。', 'abnormal')
             if today['recordStatusCode'] == 'CHECKED_IN':
                 state['success_date'] = day
                 outcome, message = 'already_done', '登录正常，今日已打卡' if action == 'probe' else '今日已打卡'
@@ -146,16 +145,13 @@ class Service:
                     confirmed = portal.today()
                     state['today'] = confirmed
                     if confirmed.get('abnormalFlag'):
-                        state['blocked_date'] = day
-                        raise PortalError('打卡记录异常，今日自动打卡已暂停，请到学校网站核实。', 'abnormal')
+                        raise PortalError('打卡记录异常。', 'abnormal')
                     if confirmed.get('businessDate') != day or confirmed.get('recordStatusCode') != 'CHECKED_IN':
                         raise PortalError('已提交，结果待确认，请稍后检查。', 'pending')
                     state['success_date'] = day
                     outcome, message = 'success', '打卡成功'
         except PortalError as e:
             outcome, message = e.kind, str(e)
-            if e.kind == 'need_auth':
-                state['blocked_date'] = day
         except Exception:
             outcome, message = 'failed', '操作未完成，请稍后重试。'
             log.exception('School operation failed (no response body or credentials logged)')
@@ -164,8 +160,6 @@ class Service:
                 a['cookies'] = portal.cookies()
                 a.pop('session_cookie', None)
                 portal.close()
-            if outcome in ('connected', 'success', 'already_done'):
-                state.pop('blocked_date', None)
             state.update(last_outcome=outcome, last_message=message, updated_at=stamp())
             self.store.save_account(a)
             self.store.event(a, action, outcome, message)
