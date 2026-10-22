@@ -94,16 +94,16 @@ class Portal:
             m = re.search(r'''pwdEncryptSalt["']?\s*[:=]\s*["']([^"']+)''', r.text)
             salt = m.group(1) if m else None
         if not salt or not execution:
-            raise PortalError('暂时无法登录，请先到学校官网完成登录验证。', 'need_auth')
+            raise PortalError('暂时无法登录，请检查账号信息。', 'need_auth')
         r = self.request('POST', LOGIN, data={'username': self.a['student_id'], 'password': encrypt_password(self.a['password'], salt), 'captcha': '', '_eventId': 'submit', 'cllt': 'userNameLogin', 'dllt': 'generalLogin', 'lt': '', 'execution': execution}, headers={'Origin': 'https://idas.uestc.edu.cn', 'Referer': LOGIN})
         dest = urljoin(LOGIN, r.headers.get('Location', ''))
         if r.is_redirect and 'ticket=' in dest:
             self.request('GET', dest, follow=True)
         else:
-            raise PortalError('登录失败，请检查学校密码。如需验证码，请到学校官网完成验证后再试。', 'need_auth')
+            raise PortalError('登录失败，请检查学校密码。', 'need_auth')
         self.warmup()
         if not self.authorized():
-            raise PortalError('暂时无法打开打卡页面，请到学校官网检查。', 'need_auth')
+            raise PortalError('暂时无法打开打卡页面，请稍后再试。', 'need_auth')
 
     def ensure(self):
         if self.a.get('cookies'):

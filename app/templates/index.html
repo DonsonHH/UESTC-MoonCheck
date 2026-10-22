@@ -49,7 +49,7 @@
 </section>
 <section id="view-help" class="view hidden">
   <div class="page-heading"><h1>帮助</h1></div>
-  <div class="help-grid"><article class="panel help-card">{{ icon('user-plus') }}<h2>添加账号</h2><p>填写学号、学校密码和信任浏览器，再点“检查登录”。</p><p>检查通过后，可手动打卡或开启自动打卡。</p></article><article class="panel help-card">{{ icon('map-pin') }}<h2>设置位置</h2><p>选择管理员提供的系统预设，或手动输入实际坐标。也可以点击“获取当前位置”。</p><p>请核对位置；电脑定位可能有偏差。</p></article><article class="panel help-card">{{ icon('clock-3') }}<h2>自动打卡</h2><p>先启用账号，再设置打卡时间并保存。</p><p>关闭网页不影响自动打卡。需要停止时，关闭“每日自动打卡”。</p></article><article class="panel help-card">{{ icon('circle-help') }}<h2>登录失败怎么办？</h2><p>先确认学号、学校密码是否正确。如需验证码，请到学校官网完成验证。</p><p>仍无法登录时，重新填写信任浏览器后再试。</p><details><summary>信任浏览器怎么填？</summary><p>在学校网站完成登录并信任浏览器后，按 F12 打开应用 → Cookies → idas.uestc.edu.cn，复制 <code>MULTIFACTOR_BROWSER_FINGERPRINT</code> 的值。</p></details></article></div>
+  <div class="help-grid"><article class="panel help-card">{{ icon('user-plus') }}<h2>添加账号</h2><p>填写学号、学校密码和信任浏览器，再点“检查登录”。</p><p>检查通过后，可手动打卡或开启自动打卡。</p></article><article class="panel help-card">{{ icon('map-pin') }}<h2>设置位置</h2><p>选择管理员提供的系统预设，或手动输入实际坐标。也可以点击“获取当前位置”。</p><p>请核对位置；电脑定位可能有偏差。</p></article><article class="panel help-card">{{ icon('clock-3') }}<h2>自动打卡</h2><p>先启用账号，再设置打卡时间并保存。</p><p>关闭网页不影响自动打卡。需要停止时，关闭“每日自动打卡”。</p></article><article class="panel help-card">{{ icon('circle-help') }}<h2>登录失败怎么办？</h2><p>先确认学号、学校密码是否正确。</p><p>仍无法登录时，重新填写信任浏览器后再试。</p><details><summary>信任浏览器怎么填？</summary><p>在学校网站完成登录并信任浏览器后，按 F12 打开应用 → Cookies → idas.uestc.edu.cn，复制 <code>MULTIFACTOR_BROWSER_FINGERPRINT</code> 的值。</p></details></article></div>
 </section>
 {% if user.role == 'superadmin' %}{% include 'admin.html' %}{% endif %}
 <footer><span>MoonCheck</span><span>晚安成电</span></footer>
