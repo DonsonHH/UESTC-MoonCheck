@@ -1,4 +1,4 @@
-# MoonCheck
+# UESTC-MoonCheck
 
 基于 Python 的宿舍晚间打卡管理网站，支持多人使用，通过 Docker Compose 部署。
 
