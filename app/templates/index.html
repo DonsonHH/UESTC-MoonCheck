@@ -44,7 +44,7 @@
     <button type="submit" class="primary">保存</button><span id="schedule-unsaved" class="unsaved hidden">有未保存的修改</span>
   </form><aside class="schedule-notes" aria-label="打卡说明"><h2>打卡须知</h2><div class="schedule-note"><span class="note-icon">{{ icon('circle-check') }}</span><div><h3>成功后停止</h3><p>当天不再重复打卡。</p></div></div><div class="schedule-note"><span class="note-icon">{{ icon('refresh-cw') }}</span><div><h3>失败后重试</h3><p>按设置的间隔和次数尝试。</p></div></div><div class="schedule-note"><span class="note-icon">{{ icon('circle-help') }}</span><div><h3>到时结束</h3><p>达到次数上限或最晚重试时间后结束。</p></div></div></aside></div>
   <form id="notification-form" class="panel notification-form">
-    <div class="setting-intro"><div><h2>飞书推送</h2><p class="muted">每次打卡成功或失败后通知。</p></div><label class="switch"><input type="checkbox" name="enabled" aria-label="开启飞书推送"><span></span></label></div>
+    <div class="setting-intro"><div><h2>飞书推送</h2><p class="muted">推送打卡结果和提前检查结果。</p></div><label class="switch"><input type="checkbox" name="enabled" aria-label="开启飞书推送"><span></span></label></div>
     <label>推送地址<input type="url" name="webhook" autocomplete="off" spellcheck="false" placeholder="https://open.feishu.cn/open-apis/bot/v2/hook/…"></label>
     <label>签名密钥 <span id="notification-secret-hint" class="muted small">（选填）</span><input type="password" name="secret" autocomplete="new-password" placeholder="机器人启用签名校验时填写"></label>
     <label class="checkbox hidden" id="notification-clear-secret"><input type="checkbox" name="clear_secret">清除已保存的签名密钥</label>

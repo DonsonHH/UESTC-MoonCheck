@@ -40,8 +40,15 @@ def preparation_day(account, settings, current, plan_factory=None):
         base = midnight + timedelta(days=offset)
         day = base.date().isoformat()
         target = base + timedelta(seconds=plan_factory(day)['target_second'] if plan_factory else minutes(settings['time'])*60)
-        if target-timedelta(minutes=30) <= current < target and day not in (state.get('preparation_date'),state.get('success_date')):
-            return day
+        if not target-timedelta(minutes=30) <= current < target or state.get('success_date') == day:
+            continue
+        if state.get('preparation_date') == day:
+            if state.get('preparation_done') or state.get('preparation_attempts', 0) >= 3:
+                continue
+            last = state.get('preparation_last_at')
+            if last and (current-datetime.fromisoformat(last)).total_seconds() < 120:
+                continue
+        return day
     return None
 
 class Service:
@@ -63,9 +70,6 @@ class Service:
             raise ValueError('已有任务执行中，请稍后再试')
         try:
             a = self.store.account(aid)
-            if preparation_for:
-                a.setdefault('state', {})['preparation_date'] = preparation_for
-                self.store.save_account(a)
             self.busy = {'account_id': aid, 'name': a['name'], 'action': action, 'started': stamp()}
             return self.executor.submit(self._worker, aid, action, preparation_for, scheduled)
         except Exception:
@@ -91,6 +95,11 @@ class Service:
         state['daily_plan'] = daily_plan(self.store.random_key,a,settings,preparation_for or day)
         portal = None
         outcome, message = 'failed', '任务未完成'
+        if preparation_for:
+            count = state.get('preparation_attempts', 0) if state.get('preparation_date') == preparation_for else 0
+            state.update(preparation_date=preparation_for, preparation_attempts=count + 1,
+                         preparation_last_at=stamp(), preparation_done=False)
+            self.store.save_account(a)
         # Persist attempt before any network activity; restarts retain retry limits.
         if action == 'checkin':
             if state.get('success_date') == day:
@@ -163,11 +172,21 @@ class Service:
                 a.pop('session_cookie', None)
                 portal.close()
             state.update(last_outcome=outcome, last_message=message, updated_at=stamp())
+            preparation_notice = None
+            if preparation_for:
+                ready = outcome in ('connected', 'already_done')
+                finished = ready or state['preparation_attempts'] >= 3
+                state.update(preparation_done=finished, preparation_last_at=stamp())
+                if finished:
+                    preparation_notice = 'preparation_success' if ready else 'preparation_failed'
             self.store.save_account(a)
             self.store.event(a, action, outcome, message)
-            if action == 'checkin':
+            if action == 'checkin' or preparation_notice:
                 try:
-                    self.notifier.enqueue(a, outcome, message, stamp())
+                    notice_message = message
+                    if preparation_notice:
+                        notice_message = f"提前检查第 {state['preparation_attempts']} 次：{message}"
+                    self.notifier.enqueue(a, preparation_notice or outcome, notice_message, stamp())
                 except Exception:
                     log.warning('Could not queue Feishu notification; school result unchanged')
 

@@ -64,7 +64,8 @@ def send_feishu(config, text):
 
 
 def result_text(account, outcome, message, at):
-    label = {'success': '打卡成功', 'already_done': '今日已打卡', 'pending': '结果待确认'}.get(outcome, '打卡失败')
+    label = {'success': '打卡成功', 'already_done': '今日已打卡', 'pending': '结果待确认',
+             'preparation_success': '提前检查成功', 'preparation_failed': '提前检查失败'}.get(outcome, '打卡失败')
     when = datetime.fromisoformat(at).strftime('%Y-%m-%d %H:%M:%S')
     return f"MoonCheck · {label}\n账号：{account['name']}\n时间：{when}\n结果：{message}"
 
