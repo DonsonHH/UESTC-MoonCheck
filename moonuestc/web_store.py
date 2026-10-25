@@ -320,6 +320,15 @@ class WebStore:
     def location_open(self,payload):
         return not self.allowed_presets or (isinstance(payload.get('location'),dict) and payload['location'].get('mode')=='preset' and payload['location'].get('preset') in self.allowed_presets)
 
+    def _configuration_revision(self,row,payload):
+        # Grant rotation and run results are independent of editable configuration.
+        # Keep credential/config values opaque while detecting actual form conflicts.
+        configuration={key:row[key] for key in ('id','owner_id','label','enabled','automatic','run_at')}
+        configuration.update({key:payload.get(key) for key in ('student_id','password','browser_fingerprint',
+            'user_agent','browser_profile','location','variation_seed')})
+        configuration['variation']=normalize_variation(payload.get('variation'))
+        return self.vault.digest('account_configuration',json.dumps(configuration,sort_keys=True,separators=(',',':')))
+
     def _public_account(self,row):
         payload=self._payload(row)
         from .wechat_authorization import authorization_summary
@@ -350,6 +359,7 @@ class WebStore:
         return {'id':row['id'],'owner_id':row['owner_id'],'owner_name':row['owner_name'],'owner_username':row['owner_username'],
                 'label':row['label'],'student_id':payload['student_id'],'enabled':bool(row['enabled']),
                 'automatic':bool(row['automatic']),'run_at':row['run_at'],'user_agent':payload['user_agent'],
+                'configuration_revision':self._configuration_revision(row,payload),
                 'location':payload.get('location'),'has_password':bool(payload.get('password')),
                 'has_browser_fingerprint':bool(payload.get('browser_fingerprint')),'ready_for_automation':ready,
                 'confirmed_today':confirmed_today,
@@ -378,11 +388,18 @@ class WebStore:
         return self._public_account(row)
 
     def save_account(self,actor,data,account_id=None):
-        allowed={'label','student_id','password','browser_fingerprint','user_agent','location','enabled','automatic','run_at','owner_id','variation'}
+        allowed={'label','student_id','password','browser_fingerprint','user_agent','location','enabled','automatic','run_at','owner_id','variation','if_match'}
         if not isinstance(data,dict) or set(data)-allowed: raise WebError(400,'invalid_fields','账号参数不正确。')
         with self.db(True) as db:
             old=self._row(db,actor,account_id) if account_id else None
             if old and self._busy(db,account_id): raise WebError(409,'account_busy','账号正在排队或执行，请稍后编辑。')
+            previous=self._payload(old) if old else {}
+            if 'if_match' in data:
+                revision=data['if_match']
+                if not old or not isinstance(revision,str) or not re.fullmatch('[a-f0-9]{64}',revision):
+                    raise WebError(400,'invalid_configuration_revision','配置版本无效，请刷新后重试。')
+                if not secrets.compare_digest(revision,self._configuration_revision(old,previous)):
+                    raise WebError(409,'configuration_changed','配置已在其他页面更新，请载入最新配置后再保存。')
             owner=data.get('owner_id',old['owner_id'] if old else actor['id'])
             if type(owner) is not int or (actor['role']!='admin' and owner!=actor['id']):
                 raise WebError(403,'owner_forbidden','不能为其他用户管理账号。')
@@ -391,7 +408,6 @@ class WebStore:
             if target['role']=='user' and db.execute('SELECT 1 FROM web_accounts WHERE owner_id=? AND id!=?',(owner,account_id or '')).fetchone():
                 raise WebError(409,'single_account_required','每位普通用户只能绑定一个学校账号。')
             aid=account_id or uuid.uuid4().hex
-            previous=self._payload(old) if old else {}
             payload=copy.deepcopy(previous)
             for key in ('student_id','password','browser_fingerprint','user_agent','location'):
                 if key in data:
