@@ -1742,6 +1742,12 @@
       "path": "README.md",
       "match_sha256": "6d92663d2268230433844db636200dfeca4c7c1500bb079071ab9ff1ec9bb887",
       "reason": "Reviewed upstream SECURE_COOKIE HTTPS boolean setting (0/1) in the original public history, not a session Cookie; exact match only, live private markers cannot be waived."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_yyb_access_recovery.py",
+      "match_sha256": "db1cfcb635758cba1bee11a8048d6b64d9089fc62043cf4f8065bec7b4b14790",
+      "reason": "Reviewed synthetic identity literal used only in offline early-access rejection tests; no deployed account or token."
     }
   ],
   "reviewed_donson_feature_version": "0.5.1+donson.24"
