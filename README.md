@@ -29,6 +29,40 @@ UESTC-MoonCheck 是一个使用 Python 开发、通过 Docker 部署的晚间打
 - 打卡记录查询、导出及详细错误说明。
 - 每个用户独立配置飞书机器人。
 
+## 界面预览
+
+### 总览
+
+![总览](docs/images/overview.png)
+
+### 打卡账号
+
+![打卡账号](docs/images/accounts.png)
+
+### 微信授权
+
+![微信扫码授权](docs/images/wechat.png)
+
+### 添加账号
+
+![添加学校账号](docs/images/add-account.png)
+
+### 自动打卡
+
+![自动打卡设置](docs/images/schedule.png)
+
+### 飞书推送
+
+![飞书机器人推送设置](docs/images/feishu.png)
+
+### 系统管理
+
+![用户与预设位置管理](docs/images/admin.png)
+
+### 帮助
+
+![使用帮助与信任浏览器说明](docs/images/help.png)
+
 ## 参考项目
 
 **原始打卡链路**
