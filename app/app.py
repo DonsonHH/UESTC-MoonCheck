@@ -14,12 +14,16 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from storage import Store, now, DEFAULT_SETTINGS, preparation_start
 from service import Service, minutes
 from planning import daily_plan, plan_datetime
+from notifications import NotificationError, send_feishu, validate_webhook
+from account_setup import AccountSetup
+from portal import PortalError
 
 def create_app(data_dir=None, start_scheduler=False, portal_factory=None):
     app = Flask(__name__)
     store = Store(data_dir or os.environ.get('MOONCHECK_DATA_DIR') or Path(__file__).parent / 'data')
     service = Service(store, **({'portal_factory': portal_factory} if portal_factory else {}))
-    app.extensions.update(store=store, service=service)
+    setup_accounts=AccountSetup(service)
+    app.extensions.update(store=store, service=service, account_setup=setup_accounts)
     app.config.update(SECRET_KEY=store.get('session_secret'), SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Strict', SESSION_COOKIE_SECURE=os.environ.get('MOONCHECK_SECURE_COOKIE') == '1', PERMANENT_SESSION_LIFETIME=timedelta(hours=8), MAX_CONTENT_LENGTH=64*1024)
     app.config['TRUSTED_HOSTS'] = [x.strip() for x in os.environ.get('MOONCHECK_TRUSTED_HOSTS', 'localhost,127.0.0.1,[::1]').split(',') if x.strip()]
     failures = {}
@@ -38,12 +42,11 @@ def create_app(data_dir=None, start_scheduler=False, portal_factory=None):
     def protect():
         session.setdefault('csrf', secrets.token_urlsafe(32))
         # Recheck identity and active state on every request (including old sessions).
-        uid = session.get('user_id') or ('root' if session.get('admin') else None)
+        uid = session.get('user_id')
         g.user = store.user(uid=uid) if uid else None
         if g.user and (not g.user['active'] or session.get('auth_version', 0) != g.user['auth_version']):
             g.user = None
             session.pop('user_id', None)
-            session.pop('admin', None)
         if g.user:
             session['user_id'] = g.user['id']
         if request.method not in ('GET', 'HEAD', 'OPTIONS'):
@@ -162,7 +165,7 @@ def create_app(data_dir=None, start_scheduler=False, portal_factory=None):
         state = a.get('state',{})
         if state.get('attempt_date') == current.date().isoformat() and state.get('last_attempt'):
             next_retry = (datetime.fromisoformat(state['last_attempt']) + timedelta(minutes=g.user['settings']['retry_minutes'],seconds=plan['retry_delay_seconds'])).isoformat()
-        return {k: v for k, v in resolved.items() if k not in ('password', 'session_cookie', 'cookies', 'fingerprint', 'address')} | {'has_password': bool(a.get('password')), 'has_fingerprint': bool(a.get('fingerprint')), 'planned_checkin_at':planned.isoformat(), 'next_retry_at':next_retry}
+        return {k: v for k, v in resolved.items() if k not in ('password', 'session_cookie', 'cookies', 'fingerprint', 'address', 'wx_credentials')} | {'has_password': bool(a.get('password')), 'has_fingerprint': bool(a.get('fingerprint')), 'has_wechat':bool(a.get('wx_credentials')), 'planned_checkin_at':planned.isoformat(), 'next_retry_at':next_retry}
 
     def owned(aid):
         a = store.account(aid)
@@ -177,68 +180,98 @@ def create_app(data_dir=None, start_scheduler=False, portal_factory=None):
         busy = service.busy if service.busy and service.busy['account_id'] in {a['id'] for a in own_accounts} else None
         return jsonify(user={k:g.user[k] for k in ('id','username','role')}, accounts=[public(a) for a in own_accounts], settings=g.user['settings'], events=store.events(owner_id=uid), presets=[p for p in store.presets() if p.get('enabled') or g.user['role']=='superadmin'], busy=busy, server_busy=bool(service.busy), server_time=now().isoformat(), scheduler_running=bool(service.scheduler_thread and service.scheduler_thread.is_alive()), scheduler_error=service.scheduler_error)
 
+    @app.post('/api/accounts/verify')
+    def verify_account():
+        with mutation():
+            try:
+                result=setup_accounts.verify(g.user['id'],request.get_json() or {})
+            except KeyError:
+                abort(404)
+            except PortalError as exc:
+                raise ValueError(str(exc)) from None
+        return jsonify(result)
+
     @app.post('/api/accounts')
     def save_account():
-        data = request.get_json() or {}
         with mutation():
-            aid = data.get('id')
-            a = owned(aid) if aid else {'id': secrets.token_hex(8), 'state': {}, 'owner_id': g.user['id']}
-            name = str(data.get('name', '')).strip()
-            sid = str(data.get('student_id', '')).strip()
-            if not name or len(name) > 40:
-                raise ValueError('备注名称需要 1–40 个字符')
-            if not re.fullmatch(r'[0-9A-Za-z_-]{4,32}', sid):
-                raise ValueError('请输入有效学号（4–32 位）')
-            if any(x['student_id'] == sid and x['id'] != a['id'] for x in store.accounts(g.user['id'])):
-                raise ValueError('该学号已经添加')
-            if a.get('student_id') and a['student_id'] != sid:
-                a = {'id': a['id'], 'state': {}, 'owner_id': g.user['id']}
-            a.update(name=name, student_id=sid, enabled=data.get('enabled') is True)
-            credentials_changed = False
-            for k in ('password', 'fingerprint'):
-                if data.get('clear_' + k):
-                    a[k] = ''
-                    credentials_changed = True
-                elif data.get(k):
-                    value = str(data[k])
-                    if len(value) > 4096 or '\r' in value or '\n' in value:
-                        raise ValueError('凭据格式不正确')
-                    a[k] = value if k == 'password' else value.strip()
-                    credentials_changed = True
-            if credentials_changed:
-                a['cookies'] = []
-            a.pop('session_cookie', None)
-            a.pop('address', None)
-            if a.get('fingerprint') and not re.fullmatch(r'[0-9a-fA-F]{32}', a['fingerprint']):
-                raise ValueError('可信浏览器指纹需要 32 位十六进制字符')
-            if not a.get('password'):
-                raise ValueError('请填写学校密码。')
-            mode = data.get('location_mode', 'manual')
-            if mode not in ('manual', 'preset'):
-                raise ValueError('请选择系统预设或手动填写')
-            a.update(location_mode=mode, preset_id=str(data.get('preset_id', '')) if mode == 'preset' else '')
-            loc = store.resolve_location(a) if mode == 'preset' else data
-            for key, low, high in (('latitude', -90, 90), ('longitude', -180, 180), ('accuracy', 0, 100000)):
-                try:
-                    value = float(loc.get(key, 50 if key == 'accuracy' else ''))
-                except (TypeError, ValueError):
-                    raise ValueError('请输入有效坐标和精度') from None
-                if not math.isfinite(value) or not low <= value <= high:
-                    raise ValueError('坐标或精度超出有效范围')
-                a[key] = value
-            if loc.get('coordinate_system', 'gcj02') not in ('gcj02', 'wgs84'):
-                raise ValueError('坐标系不正确')
-            # Browser coordinates are WGS84. Client converts them to GCJ02 before saving.
-            a.update(coordinate_system=loc.get('coordinate_system', 'gcj02'), browser_location=mode == 'manual' and data.get('browser_location') is True, location_duration_ms=min(max(int(data.get('location_duration_ms') or 0), 0), 600000) if mode == 'manual' else 0)
-            a['state'].pop('blocked_date', None)
-            store.save_account(a)
-        return jsonify(ok=True, id=a['id'])
+            try:
+                aid=setup_accounts.save(g.user['id'],request.get_json() or {})
+            except KeyError:
+                abort(404)
+        return jsonify(ok=True,id=aid)
+
+    @app.post('/api/wechat/scans')
+    def start_wechat_scan():
+        data = request.get_json(silent=True) or {}
+        target = data.get('account_id')
+        if target:
+            owned(target)
+        return jsonify(service.scans.start(g.user['id'], target))
+
+    @app.get('/api/wechat/scans/<ident>')
+    def wechat_scan_state(ident):
+        try:
+            value = service.scans.get(g.user['id'],ident)
+        except KeyError:
+            abort(404)
+        return jsonify(value)
+
+    @app.delete('/api/wechat/scans/<ident>')
+    def cancel_wechat_scan(ident):
+        try:
+            service.scans.cancel(g.user['id'],ident)
+        except KeyError:
+            abort(404)
+        return jsonify(ok=True)
 
     @app.delete('/api/accounts/<aid>')
     def delete_account(aid):
         with mutation():
-            owned(aid)
+            a = owned(aid)
             store.delete(aid)
+            if a.get('wx_credentials'):
+                service.auth.call('forget', credentials=a['wx_credentials'])
+        return jsonify(ok=True)
+
+    def notification_public(config):
+        return {k:config[k] for k in ('enabled', 'webhook', 'last_status', 'last_at')} | {'has_secret': bool(config['secret'])}
+
+    @app.get('/api/notifications')
+    def notifications_get():
+        return jsonify(notification_public(store.notification_settings(g.user['id'])))
+
+    @app.post('/api/notifications')
+    def notifications_save():
+        data = request.get_json() or {}
+        if not isinstance(data, dict):
+            raise ValueError('推送设置格式不正确。')
+        previous = store.notification_settings(g.user['id'])
+        config = {'enabled': data.get('enabled') is True,
+                  'webhook': validate_webhook(data.get('webhook', previous['webhook'])),
+                  'secret': previous['secret']}
+        if data.get('clear_secret'):
+            config['secret'] = ''
+        elif data.get('secret'):
+            secret = str(data['secret']).strip()
+            if len(secret) > 256 or any(c in secret for c in ('\r', '\n', '\x00')):
+                raise ValueError('签名密钥格式不正确。')
+            config['secret'] = secret
+        if config['enabled'] and not config['webhook']:
+            raise ValueError('请填写推送地址后再开启。')
+        store.save_notification_settings(g.user['id'], config)
+        return jsonify(notification_public(store.notification_settings(g.user['id'])))
+
+    @app.post('/api/notifications/test')
+    def notifications_test():
+        config = store.notification_settings(g.user['id'])
+        if not config['enabled']:
+            raise ValueError('请先开启并保存飞书推送。')
+        try:
+            send_feishu(config, 'MoonCheck · 测试通知\n飞书推送已连接。')
+        except NotificationError:
+            store.notification_status(g.user['id'], 'failed')
+            raise
+        store.notification_status(g.user['id'], 'sent')
         return jsonify(ok=True)
 
     @app.post('/api/settings')

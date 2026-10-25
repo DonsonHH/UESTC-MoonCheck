@@ -46,25 +46,17 @@ class Store:
             db.executescript('''
                 PRAGMA journal_mode=WAL;
                 CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
-                CREATE TABLE IF NOT EXISTS accounts (id TEXT PRIMARY KEY, config TEXT NOT NULL, state TEXT NOT NULL DEFAULT '{}');
-                CREATE TABLE IF NOT EXISTS events (id INTEGER PRIMARY KEY AUTOINCREMENT, at TEXT, account_id TEXT, name TEXT, action TEXT, outcome TEXT, message TEXT);
-                CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, username TEXT NOT NULL COLLATE NOCASE UNIQUE, password_hash TEXT NOT NULL, role TEXT NOT NULL, active INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL, settings TEXT NOT NULL);
+                CREATE TABLE IF NOT EXISTS accounts (id TEXT PRIMARY KEY, config TEXT NOT NULL, state TEXT NOT NULL DEFAULT '{}', owner_id TEXT NOT NULL DEFAULT 'root');
+                CREATE TABLE IF NOT EXISTS events (id INTEGER PRIMARY KEY AUTOINCREMENT, at TEXT, account_id TEXT, name TEXT, action TEXT, outcome TEXT, message TEXT, owner_id TEXT NOT NULL DEFAULT 'root');
+                CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, username TEXT NOT NULL COLLATE NOCASE UNIQUE, password_hash TEXT NOT NULL, role TEXT NOT NULL, active INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL, settings TEXT NOT NULL, auth_version INTEGER NOT NULL DEFAULT 0);
                 CREATE TABLE IF NOT EXISTS presets (id TEXT PRIMARY KEY, data TEXT NOT NULL);
+                CREATE TABLE IF NOT EXISTS notifications (owner_id TEXT PRIMARY KEY, config TEXT NOT NULL, last_status TEXT NOT NULL DEFAULT '', last_at TEXT NOT NULL DEFAULT '');
             ''')
-            if 'auth_version' not in {r['name'] for r in db.execute('PRAGMA table_info(users)')}:
-                db.execute('ALTER TABLE users ADD COLUMN auth_version INTEGER NOT NULL DEFAULT 0')
             for table in ('accounts', 'events'):
-                columns = {r['name'] for r in db.execute('PRAGMA table_info(' + table + ')')}
-                if 'owner_id' not in columns:
-                    db.execute('ALTER TABLE ' + table + " ADD COLUMN owner_id TEXT NOT NULL DEFAULT 'root'")
                 db.execute('CREATE INDEX IF NOT EXISTS idx_' + table + '_owner ON ' + table + '(owner_id)')
             db.execute("INSERT OR IGNORE INTO meta VALUES ('settings', ?)", (json.dumps(DEFAULT_SETTINGS),))
             db.execute("INSERT OR IGNORE INTO meta VALUES ('session_secret', ?)", (json.dumps(secrets.token_hex(32)),))
             db.execute("INSERT OR IGNORE INTO meta VALUES ('registration_enabled', 'true')")
-            legacy = db.execute("SELECT value FROM meta WHERE key='admin_hash'").fetchone()
-            if legacy and not db.execute('SELECT 1 FROM users LIMIT 1').fetchone():
-                cfg = db.execute("SELECT value FROM meta WHERE key='settings'").fetchone()[0]
-                db.execute('INSERT INTO users(id,username,password_hash,role,active,created_at,settings) VALUES (?,?,?,?,?,?,?)', ('root', 'admin', json.loads(legacy[0]), 'superadmin', 1, stamp(), cfg))
 
     @contextmanager
     def db(self):
@@ -145,6 +137,23 @@ class Store:
     def set_user_active(self, uid, active):
         with self.db() as db:
             db.execute("UPDATE users SET active=?,auth_version=auth_version+1 WHERE id=? AND role!='superadmin'", (int(active), uid))
+
+    def notification_settings(self, uid):
+        with self.db() as db:
+            row = db.execute('SELECT * FROM notifications WHERE owner_id=?', (uid,)).fetchone()
+        if not row:
+            return {'enabled': False, 'webhook': '', 'secret': '', 'last_status': '', 'last_at': ''}
+        config = json.loads(self.cipher.decrypt(row['config'].encode()))
+        return {**config, 'last_status': row['last_status'], 'last_at': row['last_at']}
+
+    def save_notification_settings(self, uid, config):
+        encrypted = self.cipher.encrypt(json.dumps({k:config[k] for k in ('enabled', 'webhook', 'secret')}, ensure_ascii=False).encode()).decode()
+        with self.db() as db:
+            db.execute("INSERT INTO notifications(owner_id,config) VALUES (?,?) ON CONFLICT(owner_id) DO UPDATE SET config=excluded.config,last_status='',last_at=''", (uid, encrypted))
+
+    def notification_status(self, uid, status):
+        with self.db() as db:
+            db.execute('UPDATE notifications SET last_status=?,last_at=? WHERE owner_id=?', (status, stamp(), uid))
 
     def presets(self):
         with self.db() as db:

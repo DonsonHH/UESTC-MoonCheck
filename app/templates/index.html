@@ -42,14 +42,21 @@
     <div class="two-cols"><label>重试间隔（分钟）<input type="number" name="retry_minutes" min="3" max="60" required></label><label>最多尝试（次）<input type="number" name="max_attempts" min="1" max="30" required></label></div>
     <details class="random-settings"><summary>随机设置</summary><div class="two-cols"><label>时间浮动（秒）<input type="number" name="time_jitter_seconds" min="0" max="300" value="120" required></label><label>位置浮动（米）<input type="number" name="location_jitter_meters" min="0" max="10" value="5" required></label></div><p class="field-hint">填 0 关闭随机。位置仅在已确认的打卡范围内浮动。</p></details>
     <button type="submit" class="primary">保存</button><span id="schedule-unsaved" class="unsaved hidden">有未保存的修改</span>
-  </form><aside class="schedule-notes" aria-label="打卡说明"><h2>打卡须知</h2><div class="schedule-note"><span class="note-icon">{{ icon('circle-check') }}</span><div><h3>成功后停止</h3><p>当天不再重复打卡。</p></div></div><div class="schedule-note"><span class="note-icon">{{ icon('refresh-cw') }}</span><div><h3>失败后重试</h3><p>按设置的间隔和次数尝试。</p></div></div><div class="schedule-note"><span class="note-icon">{{ icon('circle-help') }}</span><div><h3>异常时暂停</h3><p>遇到验证码或异常记录，暂停处理。</p></div></div></aside></div>
+  </form><aside class="schedule-notes" aria-label="打卡说明"><h2>打卡须知</h2><div class="schedule-note"><span class="note-icon">{{ icon('circle-check') }}</span><div><h3>成功后停止</h3><p>当天不再重复打卡。</p></div></div><div class="schedule-note"><span class="note-icon">{{ icon('refresh-cw') }}</span><div><h3>失败后重试</h3><p>按设置的间隔和次数尝试。</p></div></div><div class="schedule-note"><span class="note-icon">{{ icon('circle-help') }}</span><div><h3>到时结束</h3><p>达到次数上限或最晚重试时间后结束。</p></div></div></aside></div>
+  <form id="notification-form" class="panel notification-form">
+    <div class="setting-intro"><div><h2>飞书推送</h2></div><label class="switch"><input type="checkbox" name="enabled" aria-label="开启飞书推送"><span></span></label></div>
+    <label>推送地址<input type="url" name="webhook" autocomplete="off" spellcheck="false" placeholder="https://open.feishu.cn/open-apis/bot/v2/hook/…"></label>
+    <label>签名密钥 <span id="notification-secret-hint" class="muted small">（选填）</span><input type="password" name="secret" autocomplete="new-password" placeholder="机器人启用签名校验时填写"></label>
+    <label class="checkbox hidden" id="notification-clear-secret"><input type="checkbox" name="clear_secret">清除已保存的签名密钥</label>
+    <div class="notification-footer"><div class="notification-buttons"><button type="submit" class="primary">保存</button><button type="button" class="secondary" id="notification-test">发送测试</button></div><span id="notification-status" class="muted small" role="status"></span></div>
+  </form>
 </section>
 <section id="view-history" class="view hidden">
   <div class="page-heading"><h1>打卡记录</h1><a class="secondary" href="/api/history.csv">{{ icon('download') }}导出</a></div><div class="panel history-panel"><table><thead><tr><th>时间</th><th>账号</th><th>操作</th><th>结果</th><th>说明</th></tr></thead><tbody id="history-rows"></tbody></table></div>
 </section>
 <section id="view-help" class="view hidden">
   <div class="page-heading"><h1>帮助</h1></div>
-  <div class="help-grid"><article class="panel help-card">{{ icon('user-plus') }}<h2>添加账号</h2><p>填写学号、学校密码和信任浏览器，再点“检查登录”。</p><p>检查通过后，可手动打卡或开启自动打卡。</p></article><article class="panel help-card">{{ icon('map-pin') }}<h2>设置位置</h2><p>选择管理员提供的系统预设，或手动输入实际坐标。也可以点击“获取当前位置”。</p><p>请核对位置；电脑定位可能有偏差。</p></article><article class="panel help-card">{{ icon('clock-3') }}<h2>自动打卡</h2><p>先启用账号，再设置打卡时间并保存。</p><p>关闭网页不影响自动打卡。需要停止时，关闭“每日自动打卡”。</p></article><article class="panel help-card">{{ icon('circle-help') }}<h2>登录失败怎么办？</h2><p>先确认学号、学校密码是否正确。如需验证码，请到学校官网完成验证。</p><p>仍无法登录时，重新填写信任浏览器后再试。</p><details><summary>信任浏览器怎么填？</summary><p>在学校网站完成登录并信任浏览器后，按 F12 打开应用 → Cookies → idas.uestc.edu.cn，复制 <code>MULTIFACTOR_BROWSER_FINGERPRINT</code> 的值。</p></details></article></div>
+  <div class="help-grid"><article class="panel help-card">{{ icon('user-plus') }}<h2>添加账号</h2><p>使用微信扫码授权，学号会自动读取。</p><p>填完整信息，检测登录通过后再保存。</p></article><article class="panel help-card">{{ icon('map-pin') }}<h2>设置位置</h2><p>选择管理员提供的系统预设，或手动输入实际坐标。也可以点击“获取当前位置”。</p><p>请核对位置；电脑定位可能有偏差。</p></article><article class="panel help-card">{{ icon('clock-3') }}<h2>自动打卡</h2><p>先启用账号，再设置打卡时间并保存。</p><p>关闭网页不影响自动打卡。需要停止时，关闭“每日自动打卡”。</p></article><article class="panel help-card">{{ icon('circle-help') }}<h2>授权失败怎么办？</h2><p>请先在“成电智慧学工”小程序绑定学校账号，再重新扫码。</p><p>在账号卡片点击“重新授权”。扫码微信应与原绑定保持一致。</p></article></div>
 </section>
 {% if user.role == 'superadmin' %}{% include 'admin.html' %}{% endif %}
 <footer><span>MoonCheck</span><span>晚安成电</span></footer>
@@ -57,15 +64,16 @@
 <dialog id="account-dialog" aria-labelledby="dialog-title"><form id="account-form">
   <div class="dialog-heading"><h2 id="dialog-title">添加账号</h2><button type="button" class="icon-button close-dialog" aria-label="关闭">{{ icon('x') }}</button></div>
   <input name="id" type="hidden">
-  <div class="two-cols"><label>备注<input name="name" maxlength="40" required placeholder="方便自己辨认"></label><label>学号<input name="student_id" required maxlength="32" autocomplete="off" placeholder="请输入学号"></label></div>
-  <label>学校密码 <span id="password-hint" class="muted small"></span><input name="password" type="password" autocomplete="new-password" placeholder="请输入学校统一认证密码"></label>
-  <label>信任浏览器 <span id="fingerprint-hint" class="muted small"></span><input name="fingerprint" type="text" autocomplete="off" placeholder="32 位浏览器指纹" spellcheck="false" autocapitalize="none"></label>
+  <input name="draft_id" type="hidden">
+  <div class="two-cols"><label>备注<input name="name" maxlength="40" required placeholder="方便自己辨认"></label><label>学号<input name="student_id" required maxlength="32" readonly autocomplete="off"></label></div>
+  <label>学校密码 <span id="school-password-hint" class="muted small"></span><input name="password" type="password" autocomplete="new-password" placeholder="学校统一认证密码"></label><label>信任浏览器<input name="fingerprint" type="text" autocomplete="off" maxlength="32" placeholder="32 位浏览器指纹，已保存可留空"></label>
   <div class="location-heading"><h3>位置</h3></div><div class="location-choice"><label><input type="radio" name="location_mode" value="preset" checked>系统预设</label><label><input type="radio" name="location_mode" value="manual">手动填写</label></div>
   <div id="preset-location-fields" class="hidden"><label>选择预设<select name="preset_id" id="account-preset"><option value="">请选择</option></select></label><p id="preset-preview" class="info-note">请选择预设位置</p></div>
   <div id="manual-location-fields"><div class="location-heading"><span></span><button id="locate" type="button" class="text-button">{{ icon('locate-fixed') }}获取当前位置</button></div><div class="two-cols"><label>纬度<input name="latitude" type="number" min="-90" max="90" step="any" required placeholder="30.xxxxxx"></label><label>经度<input name="longitude" type="number" min="-180" max="180" step="any" required placeholder="103.xxxxxx"></label></div><div class="two-cols"><label>坐标系<select name="coordinate_system"><option value="gcj02">GCJ-02</option><option value="wgs84">WGS84</option></select></label><label>精度（米）<input name="accuracy" type="number" min="0" max="100000" step="any" value="50" required></label></div><p id="location-note" class="muted small">请确认位置无误。</p></div>
   <label class="checkbox"><input name="enabled" type="checkbox" checked>参与自动打卡</label><p id="account-error" class="form-error hidden" role="alert"></p>
-  <div class="dialog-footer"><button type="button" class="secondary close-dialog">取消</button><button type="submit" class="primary">保存</button></div>
+  <div class="dialog-footer"><button type="button" class="secondary close-dialog">取消</button><button type="submit" class="primary">检测登录</button></div>
 </form></dialog>
+<dialog id="wechat-dialog" aria-labelledby="wechat-title"><div class="dialog-heading"><h2 id="wechat-title">微信授权</h2><button type="button" class="icon-button close-wechat" aria-label="关闭">{{ icon('x') }}</button></div><div class="wechat-scan"><div class="wechat-qr"><img id="wechat-qr" alt="微信授权二维码" class="hidden"><span id="wechat-loading">正在生成二维码…</span></div><p id="wechat-message" role="status">请稍候</p></div><div class="dialog-footer"><button type="button" class="secondary close-wechat">取消</button><button type="button" class="primary hidden" id="wechat-retry">重新扫码</button></div></dialog>
 <dialog id="confirm-dialog" aria-labelledby="confirm-title"><div class="dialog-heading"><h2 id="confirm-title">确认操作</h2><button class="icon-button cancel-confirm" aria-label="关闭确认窗口">{{ icon('x') }}</button></div><p id="confirm-message"></p><div class="dialog-footer"><button class="secondary cancel-confirm">取消</button><button class="primary" id="confirm-ok">确认</button></div></dialog>
 <div id="toast" role="status" class="toast hidden"></div>
 </body></html>

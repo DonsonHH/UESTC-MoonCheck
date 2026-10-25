@@ -5,6 +5,7 @@ const csrf = $('meta[name="csrf-token"]').content;
 let state = null, view = 'overview', polling = false, timer, serverOffset = 0, scheduleDirty=false;
 let accountBaseline='',presetBaseline='';
 let renderedDay='';
+let notificationDirty=false;
 function formSnapshot(f){return JSON.stringify([...new FormData(f)]);}
 function buttonBusy(btn,text){const original=btn.innerHTML;btn.disabled=true;btn.innerHTML=icon('loader-circle')+text;btn.classList.add('is-loading');return ()=>{btn.innerHTML=original;btn.disabled=false;btn.classList.remove('is-loading');};}
 function requestClose(dialog,form,baseline){if(formSnapshot(form)!==baseline)confirmAction('放弃修改？','修改尚未保存。',()=>dialog.close(),'放弃修改',true);else dialog.close();}
@@ -12,7 +13,7 @@ let positionMeta = {browser_location:false, location_duration_ms:0};
 let adminState = null;
 const isAdmin = document.body.dataset.role === 'superadmin';
 const titles = {overview:'总览',accounts:'打卡账号',schedule:'自动打卡',history:'打卡记录',help:'帮助',...(isAdmin?{admin:'系统管理'}:{})};
-const outcomes = {success:'已打卡',already_done:'已打卡',connected:'登录正常',failed:'操作失败',need_auth:'请重新登录',abnormal:'打卡异常',pending:'待确认',out_of_window:'未到打卡时间',need_location:'请更新位置'};
+const outcomes = {success:'已打卡',already_done:'已打卡',connected:'状态正常',failed:'操作失败',need_auth:'登录异常',abnormal:'打卡异常',pending:'待确认',out_of_window:'未到打卡时间',need_location:'请更新位置'};
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const schoolDate = d => new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Shanghai',year:'numeric',month:'2-digit',day:'2-digit'}).format(d);
 const prettyTime = s => s ? new Date(s).toLocaleString('zh-CN',{timeZone:'Asia/Shanghai',hour12:false}) : '—';
@@ -32,6 +33,7 @@ function go(next){
   $$('.nav-item').forEach(el=>el.classList.toggle('active',el.dataset.view===next));
   $('#page-title').textContent=titles[next]; history.replaceState(null,'','#'+next); window.scrollTo({top:0,behavior:'smooth'});
   if(next==='admin')loadAdmin();
+  if(next==='schedule')loadNotifications();
 }
 $$('.nav-item').forEach(el=>el.addEventListener('click',()=>go(el.dataset.view)));
 $$('[data-go]').forEach(el=>el.addEventListener('click',()=>go(el.dataset.go)));
@@ -55,7 +57,7 @@ function renderAccounts(selector, detailed=false){
   root.innerHTML=state.accounts.map(a=>{
     const running=state.busy?.account_id===a.id;
     const {done,kind,label,detail}=accountStatus(a,day,running);
-    return `<article class="account-row"><div class="account-avatar">${esc(a.name.slice(0,1))}</div><div class="account-info"><strong>${esc(a.name)}</strong><small><span>${esc(a.student_id)}</span><span class="account-mode">${a.enabled?'自动打卡':'手动打卡'}</span></small></div><div class="account-status">${badge(running?'pending':kind,label)}${detail?`<small title="${esc(detail)}">${esc(detail)}</small>`:''}</div><div class="account-footer">${detailed?`<div class="account-location">${icon('map-pin')}<div><strong>${a.location_mode==='preset'?esc(a.preset_name||'预设不可用'):'手动位置'}</strong><small>${esc(a.latitude)}, ${esc(a.longitude)} <span>${esc((a.coordinate_system||'gcj02').toUpperCase())}</span></small></div></div>`:''}<div class="account-actions"><button class="account-button" data-action="probe" data-id="${a.id}" ${state.server_busy?'disabled':''}>${icon('circle-check')}检查登录</button>${done?'':`<button class="account-button checkin-button" data-action="checkin" data-id="${a.id}" ${state.server_busy?'disabled':''}>${icon('moon')}立即打卡</button>`}<button class="account-button edit-button" data-action="edit" data-id="${a.id}">编辑</button>${detailed?`<button class="account-delete" data-action="delete" data-id="${a.id}" aria-label="删除 ${esc(a.name)}" title="删除账号">${icon('trash-2')}</button>`:''}</div></div></article>`;
+    return `<article class="account-row"><div class="account-avatar">${esc(a.name.slice(0,1))}</div><div class="account-info"><strong>${esc(a.name)}</strong><small><span>${esc(a.student_id)}</span><span class="account-mode">${a.enabled?'自动打卡':'手动打卡'}</span></small></div><div class="account-status">${badge(running?'pending':kind,label)}${detail?`<small title="${esc(detail)}">${esc(detail)}</small>`:''}</div><div class="account-footer">${detailed?`<div class="account-location">${icon('map-pin')}<div><strong>${a.location_mode==='preset'?esc(a.preset_name||'预设不可用'):'手动位置'}</strong><small>${esc(a.latitude??'—')}, ${esc(a.longitude??'—')} <span>${esc((a.coordinate_system||'gcj02').toUpperCase())}</span></small></div></div>`:''}<div class="account-actions">${a.state?.wx_health?.status==='expired'?`<button class="account-button edit-button" data-action="wechat" data-id="${a.id}">${icon('user-round')}重新授权</button>`:''}<button class="account-button" data-action="probe" data-id="${a.id}" ${state.server_busy?'disabled':''}>${icon('circle-check')}检查状态</button>${done?'':`<button class="account-button checkin-button" data-action="checkin" data-id="${a.id}" ${state.server_busy?'disabled':''}>${icon('moon')}立即打卡</button>`}<button class="account-button edit-button" data-action="edit" data-id="${a.id}">编辑</button>${detailed?`<button class="account-delete" data-action="delete" data-id="${a.id}" aria-label="删除 ${esc(a.name)}" title="删除账号">${icon('trash-2')}</button>`:''}</div></div></article>`;
   }).join('');
   root.querySelectorAll('[data-action]').forEach(el=>el.addEventListener('click',()=>accountAction(el.dataset.id,el.dataset.action)));
 }
@@ -66,7 +68,7 @@ function nextPlan(){
   const clock=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Shanghai',hour:'2-digit',minute:'2-digit',hour12:false}).format(current());
   const allDone=enabled.every(a=>a.state?.success_date===day);
   if(clock>=cfg.window_end || allDone)return [cfg.time,'明天（预计）'];
-  const eligible=enabled.filter(a=>a.state?.success_date!==day && a.state?.blocked_date!==day && !(a.state?.attempt_date===day && a.state?.attempt_count>=cfg.max_attempts));
+  const eligible=enabled.filter(a=>a.state?.success_date!==day && !(a.state?.attempt_date===day && a.state?.attempt_count>=cfg.max_attempts));
   if(!eligible.length)return ['已结束','请查看打卡记录'];
   const cutoff=new Date(`${day}T${cfg.window_end}:00+08:00`).getTime();
   const waits=eligible.map(a=>{const retry=a.state?.attempt_date===day;return {retry,at:new Date(retry?a.next_retry_at:a.planned_checkin_at).getTime()};}).filter(x=>Number.isFinite(x.at)&&x.at<cutoff).sort((a,b)=>a.at-b.at);
@@ -82,15 +84,15 @@ function render(){
   const [time,note]=nextPlan();$('#stat-next').textContent=time;$('#stat-next-note').textContent=note;
   $('#stat-auto').textContent=state.settings.enabled?'已开启':'已关闭';$('#auto-pill').textContent=state.settings.enabled?'每天':'手动';$('#auto-pill').classList.toggle('on',state.settings.enabled);
   $('#stat-window').textContent=`最晚重试至 ${state.settings.window_end}`;
-  $('#hero-title').textContent=state.busy?(state.busy.action==='probe'?'正在检查登录':'正在打卡'):!state.accounts.length?'暂无打卡账号':state.settings.enabled?`每天 ${state.settings.time} 左右打卡`:'自动打卡已关闭';
+  $('#hero-title').textContent=state.busy?(state.busy.action==='probe'?'正在检查状态':'正在打卡'):!state.accounts.length?'暂无打卡账号':state.settings.enabled?`每天 ${state.settings.time} 左右打卡`:'自动打卡已关闭';
   const heroSummary=state.busy?state.busy.name:state.accounts.length&&state.settings.enabled?`${enabled.length} 个账号参与自动打卡`:'';
   $('#hero-summary').textContent=heroSummary;
   $('#hero-summary').classList.toggle('hidden',!heroSummary);
   $('#hero-action').innerHTML=icon(!state.accounts.length?'user-plus':'calendar-clock')+(!state.accounts.length?'添加账号':state.settings.enabled?'修改设置':'设置自动打卡');
   renderAccounts('#overview-accounts');renderAccounts('#all-accounts',true);
-  const rows=state.events.map(e=>`<tr><td>${esc(prettyTime(e.at))}</td><td>${esc(e.name)}</td><td>${e.action==='probe'?'检查登录':'打卡'}</td><td>${badge(e.outcome)}</td><td>${esc(e.message)}</td></tr>`).join('');
+  const rows=state.events.map(e=>`<tr><td>${esc(prettyTime(e.at))}</td><td>${esc(e.name)}</td><td>${esc(({probe:'检查状态',checkin:'打卡',wechat_refresh:'微信续期'})[e.action]||e.action)}</td><td>${badge(e.outcome,e.action==='probe'&&['connected','already_done'].includes(e.outcome)?'状态正常':undefined)}</td><td>${esc(e.message)}</td></tr>`).join('');
   $('#history-rows').innerHTML=rows||'<tr><td colspan="5"><div class="empty-state">暂无打卡记录</div></td></tr>';
-  $('#recent-records').innerHTML=state.events.slice(0,3).map(e=>`<div class="recent-row"><span class="recent-time">${esc(prettyTime(e.at))}</span><strong>${esc(e.name)}</strong><span>${e.action==='probe'?'检查登录':'打卡'}</span>${badge(e.outcome)}</div>`).join('')||'<div class="empty-state">暂无记录</div>';
+  $('#recent-records').innerHTML=state.events.slice(0,3).map(e=>`<div class="recent-row"><span class="recent-time">${esc(prettyTime(e.at))}</span><strong>${esc(e.name)}</strong><span>${esc(({probe:'检查状态',checkin:'打卡',wechat_refresh:'微信续期'})[e.action]||e.action)}</span>${badge(e.outcome,e.action==='probe'&&['connected','already_done'].includes(e.outcome)?'状态正常':undefined)}</div>`).join('')||'<div class="empty-state">暂无记录</div>';
   const warning=$('#connection-warning');
   if(!state.scheduler_running||state.scheduler_error){warning.textContent='自动打卡暂不可用，请稍后重试。';warning.classList.remove('hidden');}else warning.classList.add('hidden');
 }
@@ -102,8 +104,8 @@ async function load(initial=false){
   finally{polling=false;}
 }
 $('#refresh').addEventListener('click',async()=>{const btn=$('#refresh'),done=buttonBusy(btn,'刷新中…');try{await load();}finally{done();}});
-async function logout(){try{await api('/api/logout','POST',{});scheduleDirty=false;location.assign('/login');}catch(e){toast(e.message,true);}}
-['#logout','#logout-mobile'].forEach(selector=>$(selector).addEventListener('click',()=>{if(scheduleDirty)confirmAction('退出登录？','还有未保存的修改。',logout,'退出登录');else logout();}));
+async function logout(){try{await api('/api/logout','POST',{});scheduleDirty=false;notificationDirty=false;location.assign('/login');}catch(e){toast(e.message,true);}}
+['#logout','#logout-mobile'].forEach(selector=>$(selector).addEventListener('click',()=>{if(scheduleDirty||notificationDirty)confirmAction('退出登录？','还有未保存的修改。',logout,'退出登录');else logout();}));
 setInterval(()=>{
   const instant=current();
   $('#clock').textContent=instant.toLocaleTimeString('en-GB',{timeZone:'Asia/Shanghai',hour:'2-digit',minute:'2-digit',hour12:false});
@@ -113,13 +115,61 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&state){re
 setInterval(()=>load(),4000);
 $$('.add-account').forEach(el=>el.addEventListener('click',()=>editAccount()));
 const accountDialog=$('#account-dialog'), accountForm=$('#account-form');
-function editAccount(id){
+let accountVerification='';
+const wechatDialog=$('#wechat-dialog');
+let wechatScan=null, wechatGeneration=0, wechatTarget=null;
+async function stopWechat(){
+  wechatGeneration++;
+  const old=wechatScan;wechatScan=null;
+  if(wechatDialog.open)wechatDialog.close();
+  if(old)try{await api(`/api/wechat/scans/${old}`,'DELETE');}catch(e){toast('扫码状态未能更新，请稍后重试',true);}
+}
+async function startWechat(target=null){
+  const old=wechatScan;wechatScan=null;
+  if(old)try{await api(`/api/wechat/scans/${old}`,'DELETE');}catch(e){toast(e.message,true);return;}
+  const generation=++wechatGeneration;wechatTarget=target;
+  $('#wechat-qr').classList.add('hidden');$('#wechat-qr').removeAttribute('src');
+  $('#wechat-loading').classList.remove('hidden');$('#wechat-loading').textContent='正在生成二维码…';
+  $('#wechat-message').textContent='请稍候';$('#wechat-retry').classList.add('hidden');
+  if(!wechatDialog.open)wechatDialog.showModal();
+  try{
+    const scan=await api('/api/wechat/scans','POST',{account_id:target});
+    if(generation!==wechatGeneration){await api(`/api/wechat/scans/${scan.id}`,'DELETE');return;}
+    wechatScan=scan.id;
+    $('#wechat-qr').src=`data:image/png;base64,${scan.image}`;$('#wechat-qr').classList.remove('hidden');$('#wechat-loading').classList.add('hidden');
+    while(generation===wechatGeneration && wechatDialog.open){
+      const status=await api(`/api/wechat/scans/${scan.id}`);
+      if(generation!==wechatGeneration)return;
+      $('#wechat-message').textContent=status.message;
+      if(status.terminal){
+        wechatScan=null;
+        if(status.status==='completed'){
+          wechatDialog.close();await load();toast(status.message);
+          editAccount(target,status.account,status.draft_id);
+        }else{
+          $('#wechat-qr').classList.add('hidden');$('#wechat-loading').classList.remove('hidden');$('#wechat-loading').textContent='请重新扫码';$('#wechat-retry').classList.remove('hidden');
+        }
+        return;
+      }
+      await new Promise(resolve=>setTimeout(resolve,1500));
+    }
+  }catch(e){
+    if(generation!==wechatGeneration)return;
+    $('#wechat-message').textContent=e.message;$('#wechat-loading').textContent='暂时无法授权';$('#wechat-retry').classList.remove('hidden');
+  }
+}
+$$('.close-wechat').forEach(el=>el.addEventListener('click',stopWechat));
+wechatDialog.addEventListener('cancel',e=>{e.preventDefault();stopWechat();});
+$('#wechat-retry').addEventListener('click',()=>startWechat(wechatTarget));
+function editAccount(id,profile=null,draftId=''){
   if(!state)return;
-  accountForm.reset();$('#account-error').classList.add('hidden');$('#dialog-title').textContent=id?'编辑账号':'添加账号';$('#password-hint').textContent='';$('#fingerprint-hint').textContent='';
+  if(!id&&!profile){startWechat();return;}
+  accountForm.reset();accountVerification='';accountForm.querySelector('[type=submit]').textContent='检测登录';$('#account-error').classList.add('hidden');$('#dialog-title').textContent=id?'编辑账号':'添加账号';
+  accountForm.elements.draft_id.value=draftId;
   $('#account-preset').innerHTML='<option value="">请选择系统预设</option>'+state.presets.filter(p=>p.enabled).map(p=>`<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('');
   positionMeta={browser_location:false,location_duration_ms:0};
-  if(id){const a=state.accounts.find(a=>a.id===id);Object.entries(a).forEach(([k,v])=>{const el=accountForm.elements.namedItem(k);if(el){if(el.type==='checkbox')el.checked=v;else el.value=v??'';}});accountForm.elements.namedItem('location_mode').value=a.location_mode||'manual';$('#password-hint').textContent=a.has_password?'（留空则不修改）':'';$('#fingerprint-hint').textContent=a.has_fingerprint?'（留空则不修改）':'';positionMeta={browser_location:a.browser_location,location_duration_ms:a.location_duration_ms||0};}
-  updateLocationMode();$('#location-note').textContent='请确认位置无误。';accountDialog.showModal();accountDialog.scrollTop=0;accountBaseline=formSnapshot(accountForm);
+  {const a=profile||state.accounts.find(a=>a.id===id);Object.entries(a).forEach(([k,v])=>{const el=accountForm.elements.namedItem(k);if(el){if(el.type==='checkbox')el.checked=v;else el.value=v??'';}});accountForm.elements.namedItem('location_mode').value=a.location_mode||'preset';accountForm.elements.password.required=!a.has_password;$('#school-password-hint').textContent=a.has_password?'（已保存，留空不修改）':'';positionMeta={browser_location:a.browser_location,location_duration_ms:a.location_duration_ms||0};}
+  updateLocationMode();invalidateAccountVerification();$('#location-note').textContent='请确认位置无误。';accountDialog.showModal();accountDialog.scrollTop=0;accountBaseline=formSnapshot(accountForm);
 }
 function updateLocationMode(){
   const preset=accountForm.elements.namedItem('location_mode').value==='preset';
@@ -133,14 +183,33 @@ $$('input[name="location_mode"]').forEach(el=>el.addEventListener('change',updat
 $('#account-preset').addEventListener('change',updateLocationMode);
 $$('.close-dialog').forEach(el=>el.addEventListener('click',()=>requestClose(accountDialog,accountForm,accountBaseline)));
 accountDialog.addEventListener('cancel',e=>{e.preventDefault();requestClose(accountDialog,accountForm,accountBaseline);});
+accountDialog.addEventListener('close',()=>{
+  const draft=accountForm.elements.draft_id.value;
+  accountVerification='';accountForm.elements.draft_id.value='';
+  if(draft)api(`/api/wechat/scans/${draft}`,'DELETE').catch(()=>{});
+});
+function accountNeedsVerification(){return !accountForm.elements.id.value||!!accountForm.elements.draft_id.value||!!accountForm.elements.password.value||!!accountForm.elements.fingerprint.value;}
+function invalidateAccountVerification(){accountVerification='';accountForm.querySelector('[type=submit]').textContent=accountNeedsVerification()?'检测登录':'保存';}
+accountForm.addEventListener('input',invalidateAccountVerification);
+accountForm.addEventListener('change',invalidateAccountVerification);
 ['latitude','longitude','coordinate_system'].forEach(k=>accountForm.elements.namedItem(k).addEventListener('input',()=>{positionMeta={browser_location:false,location_duration_ms:0};}));
 accountForm.addEventListener('submit',async e=>{
   e.preventDefault();const data=Object.fromEntries(new FormData(accountForm));
   data.enabled=accountForm.elements.enabled.checked;
-  Object.assign(data,positionMeta);const btn=accountForm.querySelector('[type=submit]');const restore=buttonBusy(btn,'保存中…');
-  try{await api('/api/accounts','POST',data);accountDialog.close();await load();toast('已保存');}
-  catch(e){$('#account-error').textContent=e.message;$('#account-error').classList.remove('hidden');$('#account-error').scrollIntoView({behavior:'smooth',block:'nearest'});}
-  finally{restore();}
+  Object.assign(data,positionMeta);const btn=accountForm.querySelector('[type=submit]'),snapshot=formSnapshot(accountForm),proof=accountVerification;
+  btn.disabled=true;btn.textContent=proof||!accountNeedsVerification()?'保存中…':'检测中…';$('#account-error').classList.add('hidden');
+  try{
+    if(!proof&&accountNeedsVerification()){
+      const result=await api('/api/accounts/verify','POST',data);
+      if(accountDialog.open&&snapshot===formSnapshot(accountForm)){accountVerification=result.verification_token;toast('登录正常');}
+      else if(accountDialog.open)toast('信息已修改，请重新检测');
+    }else{
+      await api('/api/accounts','POST',{...data,verification_token:proof});
+      accountForm.elements.draft_id.value='';accountDialog.close();await load();toast('已保存');
+    }
+  }
+  catch(e){accountVerification='';$('#account-error').textContent=e.message;$('#account-error').classList.remove('hidden');$('#account-error').scrollIntoView({behavior:'smooth',block:'nearest'});}
+  finally{btn.disabled=false;btn.textContent=accountVerification||!accountNeedsVerification()?'保存':'检测登录';}
 });
 $('#schedule-form').addEventListener('input',()=>{scheduleDirty=true;$('#schedule-unsaved').classList.remove('hidden');});
 $('#schedule-form').addEventListener('submit',async e=>{
@@ -149,13 +218,57 @@ $('#schedule-form').addEventListener('submit',async e=>{
   try{await api('/api/settings','POST',data);scheduleDirty=false;$('#schedule-unsaved').classList.add('hidden');await load();toast('已保存');}catch(e){toast(e.message,true);}finally{restore();}
 });
 let confirmCallback=null;
+function notificationStatus(config){
+  if(!config.enabled)return '未开启';
+  if(config.last_status==='sent')return `最近推送成功 · ${prettyTime(config.last_at)}`;
+  if(config.last_status==='failed')return '最近推送失败，可发送测试查看原因';
+  return '已开启';
+}
+function fillNotifications(config){
+  const form=$('#notification-form');
+  form.elements.enabled.checked=config.enabled;
+  form.elements.webhook.value=config.webhook||'';
+  form.elements.webhook.required=config.enabled;
+  form.elements.secret.value='';form.elements.secret.disabled=false;
+  form.elements.clear_secret.checked=false;
+  $('#notification-clear-secret').classList.toggle('hidden',!config.has_secret);
+  $('#notification-secret-hint').textContent=config.has_secret?'（已保存，留空不修改）':'（选填）';
+  $('#notification-status').textContent=notificationStatus(config);
+  $('#notification-test').disabled=!config.enabled;
+}
+async function loadNotifications(){
+  try{const config=await api('/api/notifications');if(!notificationDirty)fillNotifications(config);}
+  catch(e){$('#notification-status').textContent='推送设置加载失败，请稍后重试';}
+}
+$('#notification-form').addEventListener('input',()=>{
+  notificationDirty=true;
+  const form=$('#notification-form');
+  form.elements.webhook.required=form.elements.enabled.checked;
+  form.elements.secret.disabled=form.elements.clear_secret.checked;
+  $('#notification-status').textContent='有未保存的修改';
+  $('#notification-test').disabled=true;
+});
+$('#notification-form').addEventListener('submit',async e=>{
+  e.preventDefault();const form=e.currentTarget,data=Object.fromEntries(new FormData(form));
+  data.enabled=form.elements.enabled.checked;data.clear_secret=form.elements.clear_secret.checked;
+  const restore=buttonBusy(form.querySelector('[type=submit]'),'保存中…');
+  try{const config=await api('/api/notifications','POST',data);notificationDirty=false;fillNotifications(config);toast('推送设置已保存');}
+  catch(e){toast(e.message,true);}finally{restore();}
+});
+$('#notification-test').addEventListener('click',async()=>{
+  if(notificationDirty){toast('请先保存推送设置');return;}
+  const restore=buttonBusy($('#notification-test'),'发送中…');
+  try{await api('/api/notifications/test','POST',{});await loadNotifications();toast('测试消息已发送');}
+  catch(e){$('#notification-status').textContent=e.message;toast(e.message,true);}finally{restore();}
+});
 function confirmAction(title,message,callback,label='确认',danger=false){$('#confirm-title').textContent=title;$('#confirm-message').textContent=message;$('#confirm-ok').textContent=label;$('#confirm-ok').classList.toggle('destructive',danger);confirmCallback=callback;$('#confirm-dialog').showModal();}
 $$('.cancel-confirm').forEach(el=>el.addEventListener('click',()=>{$('#confirm-dialog').close();confirmCallback=null;}));
 $('#confirm-ok').addEventListener('click',()=>{const cb=confirmCallback;confirmCallback=null;$('#confirm-dialog').close();if(cb)cb();});
 async function accountAction(id,action){
   const a=state.accounts.find(a=>a.id===id);
+  if(action==='wechat'){startWechat(id);return;}
   if(action==='edit'){editAccount(id);return;}
-  const run=async()=>{try{await api(`/api/accounts/${id}/${action}`,'POST',{confirm:true});await load();toast(action==='probe'?'正在检查登录…':'正在打卡…');}catch(e){toast(e.message,true);}};
+  const run=async()=>{try{await api(`/api/accounts/${id}/${action}`,'POST',{confirm:true});await load();toast(action==='probe'?'正在检查状态…':'正在打卡…');}catch(e){toast(e.message,true);}};
   if(action==='probe')return run();
   if(action==='delete')return confirmAction('删除账号',`删除“${a.name}”？打卡记录会保留。`,async()=>{try{await api('/api/accounts/'+id,'DELETE');await load();toast('已删除');}catch(e){toast(e.message,true);}},'删除',true);
   if(a.location_unavailable){toast('预设已停用，请更换位置后再打卡。',true);return;}
@@ -211,12 +324,14 @@ $('#locate').addEventListener('click',()=>{
   const btn=$('#locate'), start=performance.now();btn.disabled=true;btn.innerHTML=icon('loader-circle')+'定位中…';
   navigator.geolocation.getCurrentPosition(pos=>{
     const [lng,lat]=wgsToGcj(pos.coords.longitude,pos.coords.latitude);
+    invalidateAccountVerification();
     accountForm.elements.latitude.value=lat.toFixed(7);accountForm.elements.longitude.value=lng.toFixed(7);accountForm.elements.coordinate_system.value='gcj02';accountForm.elements.accuracy.value=Math.round(pos.coords.accuracy);
     positionMeta={browser_location:true,location_duration_ms:Math.round(performance.now()-start)};
     $('#location-note').textContent=`定位成功，精度约 ${Math.round(pos.coords.accuracy)} 米。请核对位置。`;
     btn.disabled=false;btn.innerHTML=icon('locate-fixed')+'获取当前位置';
   },err=>{toast(({1:'定位权限被拒绝，请允许定位或手动输入坐标',2:'无法获取位置，请手动输入实际坐标',3:'定位超时，请重试或手动输入坐标'})[err.code]||'定位失败',true);btn.disabled=false;btn.innerHTML=icon('locate-fixed')+'获取当前位置';},{enableHighAccuracy:true,timeout:20000,maximumAge:0});
 });
-window.addEventListener('beforeunload',e=>{if(scheduleDirty || (accountDialog.open && formSnapshot(accountForm)!==accountBaseline) || (isAdmin && $('#preset-dialog').open && formSnapshot($('#preset-form'))!==presetBaseline)){e.preventDefault();e.returnValue='';}});
+window.addEventListener('beforeunload',e=>{if(scheduleDirty || notificationDirty || (accountDialog.open && formSnapshot(accountForm)!==accountBaseline) || (isAdmin && $('#preset-dialog').open && formSnapshot($('#preset-form'))!==presetBaseline)){e.preventDefault();e.returnValue='';}});
 go(Object.hasOwn(titles,location.hash.slice(1))?location.hash.slice(1):'overview');
 load(true);
+loadNotifications();
