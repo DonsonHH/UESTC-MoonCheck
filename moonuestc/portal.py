@@ -236,9 +236,11 @@ class PortalAuth:
                 payload['id']=aid
                 if current:
                     old_payload=self.store._payload(current)
-                    # Keep the latest location/schedule if edited while school verification ran.
-                    payload['location']=old_payload.get('location',payload['location'])
-                    payload['variation']=old_payload.get('variation',payload.get('variation'))
+                    # Verification owns school credentials, not newer grants or
+                    # settings saved while its external request was in flight.
+                    verified={key:payload[key] for key in ('id','student_id','password',
+                        'browser_fingerprint','user_agent','browser_profile') if key in payload}
+                    payload={**old_payload,**verified}
                     if cookie_path(self.store.directory,old_payload).name!=cookie_path(self.store.directory,payload).name:
                         db.execute('DELETE FROM web_cookies WHERE binding=?',(cookie_path(self.store.directory,old_payload).name,))
                     db.execute('UPDATE web_accounts SET owner_id=?,payload=?,updated_at=? WHERE id=?',

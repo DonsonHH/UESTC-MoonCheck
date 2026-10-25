@@ -9,7 +9,7 @@ import './theme.css';
 import './portal.css';
 import {ThemeProvider,ThemeControl,useTheme} from './theme';
 import {JobHistory} from './job-history';
-import {adminRoutes,studentRoutes,useRoute,navigate,resolveTab,loginDestination} from './routes';
+import {adminRoutes,studentRoutes,useRoute,useHistoryGuard,navigate,resolveTab,loginDestination} from './routes';
 import {AssistedDialog,onboardingRequest,awaitSchoolCredentials} from './assisted';
 import {StudentAccessPanel} from './student-access';
 import {HostingNoticeDialog,type HostingNotice} from './hosting-notice';
@@ -82,6 +82,7 @@ function Dashboard({session,admin,onLogout,route}:{session:Session;admin:boolean
  const[accounts,setAccounts]=useState<Account[]>([]),[jobs,setJobs]=useState<Job[]>([]),[users,setUsers]=useState<User[]>([]),[loading,setLoading]=useState(true),[failed,setFailed]=useState(''),[query,setQuery]=useState('');
  const[planDirty,setPlanDirty]=useState(false);const tab=resolveTab(route,admin);const setTab=(id:string)=>{const go=()=>navigate((admin?adminRoutes:studentRoutes)[id]||(admin?'/admin':'/app'));if(!admin&&tab==='settings'&&id!==tab&&planDirty){setConfirm({title:'放弃未保存的修改？',description:'每日计划还未保存，离开后将保留原计划。',label:'离开页面',action:async()=>{setPlanDirty(false);go()}})}else go()};
  const[edit,setEdit]=useState<Account|null>(null),[editing,setEditing]=useState(false),[confirm,setConfirm]=useState<{title:string;description:string;label?:string;danger?:boolean;action:()=>Promise<void>}|null>(null),[help,setHelp]=useState(false),[passwordOpen,setPasswordOpen]=useState(false);
+ useHistoryGuard(!admin&&tab==='settings'&&planDirty,(_target,proceed)=>setConfirm({title:'放弃未保存的修改？',description:'每日计划还未保存，离开后将保留原计划。',label:'离开页面',action:async()=>{setPlanDirty(false);proceed()}}));
  const[hostingNotice,setHostingNotice]=useState<HostingNotice|null>(null);
  const[historyRefresh,setHistoryRefresh]=useState(0);
  const[reauthenticating,setReauthenticating]=useState(false),[renewToken,setRenewToken]=useState('');

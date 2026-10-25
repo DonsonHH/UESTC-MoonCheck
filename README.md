@@ -116,7 +116,7 @@ python -m unittest discover -s scripts/tests -v
 cd frontend
 pnpm install --frozen-lockfile
 pnpm build
-node --experimental-strip-types --test tests/student-state.test.mjs
+node --test tests/*.test.mjs
 ```
 
 应用测试使用合成数据。浏览器验证的原生回归位于 `browser_assist/tests/test_navigation.py`，在带 Chromium 的 helper 镜像中运行。发布前配置本机 [隐私门禁](docs/privacy-release.md)，检查源码、全部待发布历史和当前实例的敏感匹配值。
