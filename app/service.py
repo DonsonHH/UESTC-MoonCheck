@@ -190,6 +190,9 @@ class Service:
                     state['success_date'] = day
                     outcome, message = 'success', '打卡成功'
         except PortalError as e:
+            if portal and (getattr(e,'wx_reauthorize',False) or getattr(e,'wx_expired',False)):
+                portal.wx_reauthorize=True
+                portal.wx_status='expired' if getattr(e,'wx_expired',False) else 'retrying'
             outcome, message = e.kind, str(e.contextualize(stage))
         except Exception as exc:
             outcome, message = 'failed', stage+'失败：内部处理异常（'+type(exc).__name__+'）。'
@@ -198,7 +201,7 @@ class Service:
             if portal:
                 wx_status=getattr(portal,'wx_status',None)
                 if wx_status:
-                    state['wx_health']={'status':wx_status,'at':stamp()}
+                    state['wx_health']={'status':wx_status,'at':stamp(),'can_reauthorize':getattr(portal,'wx_reauthorize',False)}
                 if not isinstance(portal,WechatPortal) or portal.business_source=='school':
                     a['cookies'] = portal.cookies()
                 a.pop('session_cookie', None)

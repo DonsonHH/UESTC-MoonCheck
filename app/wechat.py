@@ -6,12 +6,12 @@ from wx_auth import AuthError
 from diagnostics import STAGES
 
 
-def prepare_credentials(bridge, account, save):
+def prepare_credentials(bridge, account, save, force=False):
     creds = account.get('wx_credentials') or {}
     if not creds.get('openid') or not creds.get('accesstoken'):
         error=PortalError('请先使用微信扫码授权。', 'need_auth');error.wx_expired=True
         raise error
-    if creds.get('expires_at', 0) <= time.time()+60:
+    if force or creds.get('expires_at', 0) <= time.time()+60:
         if not creds.get('refreshtoken'):
             error=PortalError('微信授权已失效，请重新扫码。', 'need_auth');error.wx_expired=True
             raise error
@@ -44,15 +44,33 @@ class WechatPortal(Portal):
         self.ticket = None
         self.business_source = None
         self.wx_status = None
+        self.wx_reauthorize = False
 
     def code(self):
-        try:
-            value = self.bridge.call('code', credentials=self.credentials)
-        except AuthError as exc:
-            error=PortalError(str(exc), 'need_auth' if exc.definitive else 'failed',stage='获取微信登录码')
-            error.auth_code=exc.code
-            error.wx_expired=exc.definitive
-            raise error from None
+        for attempt in range(2):
+            try:
+                value = self.bridge.call('code', credentials=self.credentials)
+                break
+            except AuthError as exc:
+                if exc.access_invalid and not exc.definitive and attempt==0:
+                    try:
+                        self.credentials=prepare_credentials(self.bridge,self.original,self.save,force=True)
+                        self.bridge.call('forget',credentials=self.credentials)
+                    except PortalError as error:
+                        error.wx_reauthorize=True
+                        raise
+                    except AuthError as error:
+                        failure=PortalError(str(error),'need_auth' if error.definitive else 'failed',stage='重建微信登录会话')
+                        failure.wx_expired=error.definitive;failure.wx_reauthorize=True
+                        raise failure from None
+                    continue
+                message=str(exc)
+                if exc.access_invalid:message+=' 自动刷新后访问凭据仍不可用，可重新扫码更新授权。'
+                error=PortalError(message, 'need_auth' if exc.definitive else 'failed',stage='获取微信登录码')
+                error.auth_code=exc.code
+                error.wx_expired=exc.definitive
+                error.wx_reauthorize=exc.definitive or exc.access_invalid
+                raise error from None
         code = value.get('code')
         if not isinstance(code, str) or not code.strip():
             raise PortalError('未获取到微信登录码，请稍后重试。', 'need_auth')
@@ -83,6 +101,7 @@ class WechatPortal(Portal):
             user=self._bind()
         except PortalError as exc:
             self.wx_status='expired' if getattr(exc,'wx_expired',False) else 'retrying'
+            self.wx_reauthorize=getattr(exc,'wx_reauthorize',False) or self.wx_status=='expired'
             raise
         self.wx_status='ready'
         return user
