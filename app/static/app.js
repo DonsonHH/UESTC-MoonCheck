@@ -68,10 +68,10 @@ function nextPlan(){
   const clock=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Shanghai',hour:'2-digit',minute:'2-digit',hour12:false}).format(current());
   const allDone=enabled.every(a=>a.state?.success_date===day);
   if(clock>=cfg.window_end || allDone)return [cfg.time,'明天（预计）'];
-  const eligible=enabled.filter(a=>a.state?.success_date!==day && !(a.state?.attempt_date===day && a.state?.attempt_count>=cfg.max_attempts));
+  const eligible=enabled.filter(a=>a.state?.success_date!==day && !(a.state?.auto_attempt_date===day && a.state?.auto_attempt_count>=cfg.max_attempts));
   if(!eligible.length)return ['已结束','请查看打卡记录'];
   const cutoff=new Date(`${day}T${cfg.window_end}:00+08:00`).getTime();
-  const waits=eligible.map(a=>{const retry=a.state?.attempt_date===day;return {retry,at:new Date(retry?a.next_retry_at:a.planned_checkin_at).getTime()};}).filter(x=>Number.isFinite(x.at)&&x.at<cutoff).sort((a,b)=>a.at-b.at);
+  const waits=eligible.map(a=>{const retry=a.state?.auto_attempt_date===day;return {retry,at:new Date(retry?a.next_retry_at:a.planned_checkin_at).getTime()};}).filter(x=>Number.isFinite(x.at)&&x.at<cutoff).sort((a,b)=>a.at-b.at);
   if(!waits.length)return ['已结束','今日不再重试'];
   const next=waits[0];
   if(next.at>Date.now()+serverOffset)return [new Date(next.at).toLocaleTimeString('en-GB',{timeZone:'Asia/Shanghai',hour:'2-digit',minute:'2-digit',second:'2-digit'}),next.retry?'下次重试':'今天'];
@@ -90,9 +90,9 @@ function render(){
   $('#hero-summary').classList.toggle('hidden',!heroSummary);
   $('#hero-action').innerHTML=icon(!state.accounts.length?'user-plus':'calendar-clock')+(!state.accounts.length?'添加账号':state.settings.enabled?'修改设置':'设置自动打卡');
   renderAccounts('#overview-accounts');renderAccounts('#all-accounts',true);
-  const rows=state.events.map(e=>`<tr><td>${esc(prettyTime(e.at))}</td><td>${esc(e.name)}</td><td>${esc(({probe:'检查状态',checkin:'打卡',wechat_refresh:'微信续期'})[e.action]||e.action)}</td><td>${badge(e.outcome,e.action==='probe'&&['connected','already_done'].includes(e.outcome)?'状态正常':undefined)}</td><td>${esc(e.message)}</td></tr>`).join('');
+  const rows=state.events.map(e=>`<tr><td>${esc(prettyTime(e.at))}</td><td>${esc(e.name)}</td><td>${esc(({probe:'检查状态',checkin:'打卡',manual_checkin:'手动打卡',auto_checkin:'自动打卡',wechat_refresh:'微信续期'})[e.action]||e.action)}</td><td>${badge(e.outcome,e.action==='probe'&&['connected','already_done'].includes(e.outcome)?'状态正常':undefined)}</td><td>${esc(e.message)}</td></tr>`).join('');
   $('#history-rows').innerHTML=rows||'<tr><td colspan="5"><div class="empty-state">暂无打卡记录</div></td></tr>';
-  $('#recent-records').innerHTML=state.events.slice(0,3).map(e=>`<div class="recent-row"><span class="recent-time">${esc(prettyTime(e.at))}</span><strong>${esc(e.name)}</strong><span>${esc(({probe:'检查状态',checkin:'打卡',wechat_refresh:'微信续期'})[e.action]||e.action)}</span>${badge(e.outcome,e.action==='probe'&&['connected','already_done'].includes(e.outcome)?'状态正常':undefined)}</div>`).join('')||'<div class="empty-state">暂无记录</div>';
+  $('#recent-records').innerHTML=state.events.slice(0,3).map(e=>`<div class="recent-row"><span class="recent-time">${esc(prettyTime(e.at))}</span><strong>${esc(e.name)}</strong><span>${esc(({probe:'检查状态',checkin:'打卡',manual_checkin:'手动打卡',auto_checkin:'自动打卡',wechat_refresh:'微信续期'})[e.action]||e.action)}</span>${badge(e.outcome,e.action==='probe'&&['connected','already_done'].includes(e.outcome)?'状态正常':undefined)}</div>`).join('')||'<div class="empty-state">暂无记录</div>';
   const warning=$('#connection-warning');
   if(!state.scheduler_running||state.scheduler_error){warning.textContent='自动打卡暂不可用，请稍后重试。';warning.classList.remove('hidden');}else warning.classList.add('hidden');
 }

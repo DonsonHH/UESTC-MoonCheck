@@ -25,10 +25,10 @@ def due(account, settings, current, plan=None):
     target = plan['target_second'] if plan else minutes(settings['time'])*60
     if not target <= t < minutes(settings['window_end'])*60:
         return False
-    if state.get('attempt_date') == day:
-        if state.get('attempt_count', 0) >= settings['max_attempts']:
+    if state.get('auto_attempt_date') == day:
+        if state.get('auto_attempt_count', 0) >= settings['max_attempts']:
             return False
-        last = datetime.fromisoformat(state['last_attempt'])
+        last = datetime.fromisoformat(state['auto_last_attempt'])
         if (current - last).total_seconds() < settings['retry_minutes'] * 60 + (plan.get('retry_delay_seconds',0) if plan else 0):
             return False
     return True
@@ -118,14 +118,16 @@ class Service:
                          preparation_last_at=stamp(), preparation_done=False)
             self.store.save_account(a)
         # Persist attempt before any network activity; restarts retain retry limits.
+        event_action=('auto_checkin' if scheduled else 'manual_checkin') if action=='checkin' else action
         if action == 'checkin':
             if state.get('success_date') == day:
-                self.store.event(a, action, 'already_done', '今日已打卡')
+                self.store.event(a, event_action, 'already_done', '今日已打卡')
                 return
-            count = state.get('attempt_count', 0) if state.get('attempt_date') == day else 0
-            state.update(attempt_date=day, attempt_count=count + 1, last_attempt=stamp())
-            state['daily_plan'] = daily_plan(self.store.random_key,a,settings,day)
-            self.store.save_account(a)
+            if scheduled:
+                count = state.get('auto_attempt_count', 0) if state.get('auto_attempt_date') == day else 0
+                state.update(auto_attempt_date=day, auto_attempt_count=count + 1, auto_last_attempt=stamp())
+                state['daily_plan'] = daily_plan(self.store.random_key,a,settings,day)
+                self.store.save_account(a)
         try:
             try:
                 effective = self.store.resolve_location(a)
@@ -210,7 +212,7 @@ class Service:
                 if finished:
                     preparation_notice = 'preparation_success' if ready else 'preparation_failed'
             self.store.save_account(a)
-            self.store.event(a, action, outcome, message)
+            self.store.event(a, event_action, outcome, message)
             if action == 'checkin' or preparation_notice:
                 try:
                     notice_message = message

@@ -20,7 +20,7 @@ def daily_plan(key, account, settings, day):
     maximum = max(0, min(int(settings.get('time_jitter_seconds', 120)), deadline - base - 15))
     purpose = f"time/{settings['time']}/{settings['window_end']}/{maximum}"
     delay = rng_for(key, aid, day, purpose).randint(0, maximum)
-    count = account.get('state', {}).get('attempt_count', 0)
+    count = account.get('state', {}).get('auto_attempt_count', 0)
     retry_delay = rng_for(key, aid, day, f'retry/{count}').randint(0, min(30, maximum))
     target = base + delay
     return {'date':day, 'delay_seconds':delay, 'target_second':target, 'target_time':f'{target//3600:02d}:{target//60%60:02d}:{target%60:02d}', 'retry_delay_seconds':retry_delay}

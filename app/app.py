@@ -163,8 +163,8 @@ def create_app(data_dir=None, start_scheduler=False, portal_factory=None):
         planned = plan_datetime(current,plan)
         next_retry = None
         state = a.get('state',{})
-        if state.get('attempt_date') == current.date().isoformat() and state.get('last_attempt'):
-            next_retry = (datetime.fromisoformat(state['last_attempt']) + timedelta(minutes=g.user['settings']['retry_minutes'],seconds=plan['retry_delay_seconds'])).isoformat()
+        if state.get('auto_attempt_date') == current.date().isoformat() and state.get('auto_last_attempt'):
+            next_retry = max(planned,datetime.fromisoformat(state['auto_last_attempt']) + timedelta(minutes=g.user['settings']['retry_minutes'],seconds=plan['retry_delay_seconds'])).isoformat()
         return {k: v for k, v in resolved.items() if k not in ('password', 'session_cookie', 'cookies', 'fingerprint', 'address', 'wx_credentials')} | {'has_password': bool(a.get('password')), 'has_fingerprint': bool(a.get('fingerprint')), 'has_wechat':bool(a.get('wx_credentials')), 'planned_checkin_at':planned.isoformat(), 'next_retry_at':next_retry}
 
     def owned(aid):
