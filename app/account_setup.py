@@ -97,7 +97,7 @@ class AccountSetup:
             a['cookies']=portal.cookies()
             checked=today.get('recordStatusCode')=='CHECKED_IN'
             verified_state=dict(wx_health={'status':'ready','at':now().isoformat()},today=today,last_outcome='already_done' if checked else 'connected',
-                last_message='登录正常，今日已打卡' if checked else '登录正常',updated_at=now().isoformat())
+                last_message='统一身份认证正常，微信授权正常；今日已打卡' if checked else '统一身份认证正常，微信授权正常',updated_at=now().isoformat())
             if checked:verified_state['success_date']=today['businessDate']
             a.setdefault('state',{}).update(verified_state)
             token=secrets.token_hex(24)
@@ -105,7 +105,7 @@ class AccountSetup:
                 self.proofs={k:v for k,v in self.proofs.items() if v['expires']>time.monotonic() and v['owner']!=owner}
                 self.proofs[token]=dict(owner=owner,expires=time.monotonic()+300,config_hash=config_hash,
                     revision=revision,account=copy.deepcopy(a),verified_state=copy.deepcopy(verified_state),draft_id=data.get('draft_id'))
-            return {'verification_token':token,'message':'检测通过，请保存。'}
+            return {'verification_token':token,'message':'统一身份认证正常，微信授权正常。请保存。'}
         finally:
             if portal:portal.close()
 

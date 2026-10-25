@@ -201,7 +201,7 @@ accountForm.addEventListener('submit',async e=>{
   try{
     if(!proof&&accountNeedsVerification()){
       const result=await api('/api/accounts/verify','POST',data);
-      if(accountDialog.open&&snapshot===formSnapshot(accountForm)){accountVerification=result.verification_token;toast('登录正常');}
+      if(accountDialog.open&&snapshot===formSnapshot(accountForm)){accountVerification=result.verification_token;toast(result.message);}
       else if(accountDialog.open)toast('信息已修改，请重新检测');
     }else{
       await api('/api/accounts','POST',{...data,verification_token:proof});
