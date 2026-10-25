@@ -18,7 +18,7 @@ class QQError(Exception):
 
 
 def identifier(value):
-    if not isinstance(value,str) or not re.fullmatch('[A-Za-z0-9_-]{6,160}',value):raise QQError('qq_invalid_identifier')
+    if not isinstance(value,str) or not re.fullmatch('[A-Za-z0-9_-]{6,160}',value) or value.isdigit() and len(value)<20:raise QQError('qq_invalid_identifier')
     return value
 
 
@@ -63,6 +63,10 @@ class QQClient:
         identifier(target)
         if not isinstance(text,str) or not 1<=len(text)<=5000:raise QQError('qq_message_size')
         value={'msg_type':0,'content':text}
+        if kind=='group' and '<qqbot-at-user ' in text:
+            # QQ renders member interactions in Markdown; text payloads display
+            # the literal tag even when the API accepts the message.
+            value={'msg_type':2,'markdown':{'content':text}}
         if msg_id:value.update(msg_id=message_identifier(msg_id),msg_seq=1)
         result=self.call('POST','/v2/'+('groups' if kind=='group' else 'users')+'/'+target+'/messages',value)
         if not result.get('id'):raise QQError('qq_delivery_unconfirmed')
@@ -112,7 +116,13 @@ def event_context(event):
         message=message_identifier(data.get('id'));content=data.get('content','')
         if not isinstance(content,str) or len(content)>5000:return None
         content=re.sub(r'<@!?[A-Za-z0-9_-]+>','',content).strip().lstrip('/').strip()
-        return {'kind':'group' if group else 'user','target':target,'sender':sender,'msg_id':message,'content':content}
+        mentioned=[]
+        for member in (data.get('mentions') or [])[:20] if isinstance(data.get('mentions',[]),list) else []:
+            if not isinstance(member,dict) or member.get('bot') is True:continue
+            try:openid=identifier(member.get('member_openid') or member.get('id'))
+            except QQError:continue
+            if openid not in mentioned:mentioned.append(openid)
+        return {'kind':'group' if group else 'user','target':target,'sender':sender,'msg_id':message,'content':content,'mentioned_members':mentioned}
     except (QQError,AttributeError):return None
 
 

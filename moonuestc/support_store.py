@@ -42,7 +42,7 @@ class SupportStore:
 
     def cadres(self):
         with self.store.db() as db:
-            rows=db.execute("SELECT s.name,a.id,a.owner_id,a.enabled,a.automatic,u.active FROM web_support_settings s JOIN web_accounts a ON a.id=s.account_id JOIN web_users u ON u.id=a.owner_id WHERE s.name LIKE 'cadre:%'").fetchall()
+            rows=db.execute("SELECT s.name,a.id,a.owner_id,a.enabled,a.automatic,u.active,u.role FROM web_support_settings s JOIN web_accounts a ON a.id=s.account_id JOIN web_users u ON u.id=a.owner_id WHERE s.name LIKE 'cadre:%'").fetchall()
             return [(dict(row),self.get(row['name'],db=db)) for row in rows]
 
     def reminder(self,user_id):return self.get('reminder:'+str(user_id),{'enabled':False})
@@ -66,12 +66,16 @@ class SupportStore:
         with self.store.db(True) as db:
             row=db.execute('SELECT * FROM web_support_tokens WHERE digest=? AND expires_at>?',(digest,time.time())).fetchone()
             if not row:return False
-            if row['kind']=='group':
+            if row['kind'] in ('group','group_test'):
                 if context['kind']!='group':return False
                 name='cadre:'+row['account_id'];value=self.get(name,db=db)
                 if not value:return False
-                value.update(group_openid=context['target'],group_reminders=True)
-                self.put(name,value,account_id=row['account_id'],db=db)
+                if row['kind']=='group_test':
+                    self.put('qq_test_destination',{'group_openid':context['target'],'openid':context['sender']},db=db)
+                else:
+                    if value.get('group_openid')!=context['target']:value['members']={}
+                    value.update(group_openid=context['target'],group_reminders=True)
+                    self.put(name,value,account_id=row['account_id'],db=db)
             elif row['kind']=='personal':
                 if context['kind']!='user':return False
                 name='reminder:'+str(row['user_id']);value=self.get(name,{'enabled':False},db=db)
@@ -80,7 +84,7 @@ class SupportStore:
                 self.put(name,value,user_id=row['user_id'],db=db)
             else:return False
             db.execute('DELETE FROM web_support_tokens WHERE digest=?',(digest,))
-        return True
+        return row['kind']
 
     def once_event(self,event_id):
         digest=self.store.vault.digest('qq_event',event_id)

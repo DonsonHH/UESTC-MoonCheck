@@ -53,9 +53,18 @@ class QQProtocol(unittest.TestCase):
         self.assertEqual(raised.exception.code,'qq_delivery_unconfirmed')
     def test_target_cannot_inject_another_endpoint(self):
         client=self.client()
-        for target in ('../users','x?openid=evil','<@all>',''):
+        for target in ('../users','x?openid=evil','<@all>','','123456789'):
             with self.assertRaises(QQError):client.send('group',target,'合成测试')
         self.assertEqual(self.session.calls,[])
+    def test_group_mentions_use_markdown_which_renders_real_interactions(self):
+        client=self.client();text='<qqbot-at-user id="synthetic-member" /> 合成提醒'
+        client.send('group','synthetic-group',text)
+        value=self.session.calls[-1][2]['json']
+        self.assertEqual(value,{'msg_type':2,'markdown':{'content':text}})
+    def test_mentioned_member_can_be_identified_without_their_own_message(self):
+        context=event_context({'t':'GROUP_AT_MESSAGE_CREATE','d':{'id':'ROBOT1.0_Synthetic==','group_openid':'synthetic-group',
+            'author':{'member_openid':'synthetic-operator'},'content':'成员身份','mentions':[{'member_openid':'synthetic-classmate','bot':False},{'member_openid':'synthetic-bot','bot':True}]}})
+        self.assertEqual(context['mentioned_members'],['synthetic-classmate']);self.assertEqual(context['sender'],'synthetic-operator')
     def test_callback_event_signature_and_challenge_are_distinct(self):
         config={'app_id':'synthetic-app','app_secret':'synthetic-client-secret'};stamp='1792970400'
         value={'op':0,'t':'C2C_MESSAGE_CREATE','d':{}};raw=json.dumps(value).encode()

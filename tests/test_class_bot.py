@@ -249,3 +249,24 @@ class ClassBot(fixtures.WebCase):
             with self.assertRaises(ToolError):
                 with school_session(self.store,self.aid,clock=lambda:self.instant):self.fail('Failed login cannot yield a school session')
         transport.save.assert_called_once()
+    def test_test_group_binding_never_activates_or_replaces_formal_group(self):
+        before=copy.deepcopy(self.support.data.cadre(self.aid));code=self.support.data.new_code('group_test',account_id=self.aid)
+        event=self.event('绑定测试群 '+code,group=True);event['d']['group_openid']='synthetic-test-group'
+        self.assertEqual(self.callback(event).status_code,200)
+        self.assertEqual(self.support.data.cadre(self.aid),before)
+        self.assertEqual(self.support.data.get('qq_test_destination')['group_openid'],'synthetic-test-group')
+    def test_changing_formal_group_clears_old_group_member_mappings(self):
+        code=self.support.data.new_code('group',account_id=self.aid);event=self.event('绑定班级 '+code,group=True)
+        event['d']['group_openid']='synthetic-new-formal-group';self.callback(event)
+        self.assertEqual(self.support.data.cadre(self.aid)['members'],{})
+    def test_operator_can_obtain_mentioned_member_id_without_self_binding(self):
+        event=self.event('成员身份',group=True);event['d']['mentions']=[{'member_openid':'synthetic-classmate','bot':False}]
+        self.callback(event)
+        self.assertIn('synthetic-classmate',self.qq.messages[0][2]);self.assertEqual(self.support.data.cadre(self.aid)['members'],self.config['members'])
+        self.assertEqual(self.support.data.contacts()[0]['sender'],'synthetic-classmate')
+    def test_unbound_formal_group_still_retains_daily_count_without_sending_to_test(self):
+        self.support.data.put('cadre:'+self.aid,{**self.config,'group_openid':'','group_reminders':False},account_id=self.aid)
+        self.support.data.put('qq_test_destination',{'group_openid':'synthetic-test-group','openid':'synthetic-operator'})
+        self.instant=self.instant.replace(hour=23,minute=10);self.support.next_poll=0;self.support.tick()
+        self.assertEqual(self.qq.messages,[])
+        runs=self.support.data.runs(self.aid);self.assertEqual(runs[0]['result']['pending'],2);self.assertEqual(runs[0]['result']['delivery'],'disabled')

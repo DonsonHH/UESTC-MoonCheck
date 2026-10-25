@@ -261,7 +261,9 @@ def create_app(directory,public_url,*,allow_http=False,start_worker=False,runner
     @protected(admin=True)
     def class_group_binding(account_id):
         support.data.owner(g.moon_user,account_id)
-        return response_ok({'code':support.data.new_code('group',account_id=account_id),'expires_in':600})
+        value=body()
+        if set(value)-{'test'} or type(value.get('test',False)) is not bool:raise WebError(400,'invalid_fields','群绑定参数不正确。')
+        return response_ok({'code':support.data.new_code('group_test' if value.get('test') else 'group',account_id=account_id),'expires_in':600,'test':value.get('test',False)})
 
     @app.post('/api/class/<account_id>/test-message')
     @protected(admin=True)
