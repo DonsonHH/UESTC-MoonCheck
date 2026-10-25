@@ -34,7 +34,7 @@ class SupportManager:
         value=self.data.get('qq_bot')
         return {'configured':bool(value.get('app_id') and value.get('app_secret')),'enabled':bool(value.get('enabled')),
             'callback_url':origin+'/api/qq/callback/'+value['callback_key'] if value.get('callback_key') else '',
-            'last_verified_at':value.get('verified_at'),'contacts':self.data.contacts()}
+            'last_verified_at':value.get('verified_at'),'last_callback':value.get('last_callback'),'contacts':self.data.contacts()}
     def configure_bot(self,data):
         if not isinstance(data,dict) or set(data)-{'app_id','app_secret','enabled'}:raise WebError(400,'invalid_fields','机器人参数不正确。')
         value=self.data.get('qq_bot');value.update(data)
@@ -119,10 +119,18 @@ class SupportManager:
         config=self.data.get('qq_bot')
         if not config.get('enabled') or not secrets.compare_digest(key,config.get('callback_key','')):raise WebError(404,'not_found','请求地址不存在。')
         response,event=verified_callback(config,headers,raw)
+        context=event_context(event) if event else None
+        kind=(event or {}).get('t','VALIDATION')
+        if not isinstance(kind,str) or not re.fullmatch('[A-Z_]{1,80}',kind):kind='UNKNOWN_EVENT'
+        # Retain only delivery metadata, never raw events or chat content.
+        with self.store.db(True) as db:
+            current=self.data.get('qq_bot',db=db)
+            if current.get('callback_key')==key:
+                current['last_callback']={'at':time.time(),'event_type':kind,'message_parsed':bool(context)}
+                self.data.put('qq_bot',current,db=db)
         if event:
-            context=event_context(event)
             event_id=event.get('id') or (context or {}).get('msg_id')
-            if context and isinstance(event_id,str) and len(event_id)<=200 and self.data.once_event(event_id):
+            if context and isinstance(event_id,str) and len(event_id)<=1200 and self.data.once_event(event_id):
                 content=context['content'];reply=None
                 if content in ('身份','我的身份'):
                     self.data.contact(context)

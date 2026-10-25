@@ -4,7 +4,7 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from moonuestc.qq_bot import QQClient,QQError,verified_callback,signing_key
+from moonuestc.qq_bot import QQClient,QQError,verified_callback,signing_key,event_context
 
 
 class Session:
@@ -21,6 +21,14 @@ class Session:
 
 
 class QQProtocol(unittest.TestCase):
+    def test_official_dotted_message_ids_are_opaque_metadata_not_target_ids(self):
+        message='ROBOT1.0_SyntheticMessageWithPadding=='
+        event={'t':'GROUP_AT_MESSAGE_CREATE','d':{'id':message,'group_openid':'synthetic-group','author':{'member_openid':'synthetic-member'},'content':' /绑定班级 ABCDEF0123456789 '}}
+        context=event_context(event)
+        self.assertIsNotNone(context,'Official ROBOT1.0 message IDs must not be rejected by the OpenID validator')
+        self.assertEqual(context['msg_id'],message)
+        client=self.client();client.send('group','synthetic-group','合成测试',msg_id=message)
+        self.assertEqual(self.session.calls[-1][2]['json']['msg_id'],message)
     def client(self):
         self.session=Session();client=QQClient({'app_id':'synthetic-app','app_secret':'synthetic-client-secret'},session=self.session)
         self.addCleanup(client.close);return client

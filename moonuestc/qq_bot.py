@@ -22,6 +22,12 @@ def identifier(value):
     return value
 
 
+def message_identifier(value):
+    # Message IDs are opaque JSON metadata (e.g. ROBOT1.0_...==), never URL paths.
+    if not isinstance(value,str) or not 1<=len(value)<=1024 or any(ord(c)<33 or ord(c)>126 for c in value):raise QQError('qq_invalid_message_id')
+    return value
+
+
 class QQClient:
     def __init__(self,config,session=None):
         self.config=config;self.session=session or requests.Session()
@@ -57,7 +63,7 @@ class QQClient:
         identifier(target)
         if not isinstance(text,str) or not 1<=len(text)<=5000:raise QQError('qq_message_size')
         value={'msg_type':0,'content':text}
-        if msg_id:value.update(msg_id=identifier(msg_id),msg_seq=1)
+        if msg_id:value.update(msg_id=message_identifier(msg_id),msg_seq=1)
         result=self.call('POST','/v2/'+('groups' if kind=='group' else 'users')+'/'+target+'/messages',value)
         if not result.get('id'):raise QQError('qq_delivery_unconfirmed')
         return {'sent':True}
@@ -103,9 +109,9 @@ def event_context(event):
         author=data.get('author') or {};group=name!='C2C_MESSAGE_CREATE'
         sender=identifier(author.get('member_openid') if group else author.get('user_openid'))
         target=identifier(data.get('group_openid')) if group else sender
-        message=identifier(data.get('id'));content=data.get('content','')
+        message=message_identifier(data.get('id'));content=data.get('content','')
         if not isinstance(content,str) or len(content)>5000:return None
-        content=re.sub(r'<@!?[A-Za-z0-9_-]+>','',content).strip().lstrip('/')
+        content=re.sub(r'<@!?[A-Za-z0-9_-]+>','',content).strip().lstrip('/').strip()
         return {'kind':'group' if group else 'user','target':target,'sender':sender,'msg_id':message,'content':content}
     except (QQError,AttributeError):return None
 
