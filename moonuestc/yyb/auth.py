@@ -29,9 +29,10 @@ def definitive_rejection(code,message):
 
 
 class AuthError(ValueError):
-    def __init__(self,code,detail='',business_code=None,http=None):
+    def __init__(self,code,detail='',business_code=None,http=None,access_invalid=False):
         self.code=code
         self.definitive=code in ('needs_rescan','invalid_credentials')
+        self.access_invalid=access_invalid
         messages={
             'needs_rescan':'微信授权已失效，请重新扫码。',
             'exchange_failed':'微信已确认，但未取得应用宝授权凭据，请重新扫码。',
@@ -195,7 +196,9 @@ class AuthClient:
             if value['code']!=0:
                 raw=next((value[k] for k in ('msg','message') if isinstance(value.get(k),str) and value[k].strip()),'')
                 kind='needs_rescan' if definitive_rejection(value['code'],raw) else ('refresh_failed' if path=='pcyyb_refresh_token_auth' else 'login_buffer_failed')
-                raise AuthError(kind,safe_text(raw,credentials,body),value['code'])
+                normalized=re.sub(r'[_-]',' ',raw.lower())
+                invalid=path=='pcyyb_get_wx_login_buffer_auth' and 'access token' in normalized and any(word in normalized for word in ('invalid','expired','not latest','无效','过期','失效'))
+                raise AuthError(kind,safe_text(raw,credentials,body),value['code'],access_invalid=invalid)
             return value
         except ValueError as exc:
             if isinstance(exc,AuthError):raise

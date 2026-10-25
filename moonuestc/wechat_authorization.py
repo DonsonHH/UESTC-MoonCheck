@@ -96,7 +96,7 @@ class OperationAuthorization:
     def __init__(self,account,client,save,gateway_factory=SchoolMiniGateway,*,bootstrap=False):
         self.account=account;self.client=client;self.save=save;self.gateway=gateway_factory(account)
         self.meta=copy.deepcopy(account.get('wechat_authorization') or {})
-        self.user=None;self.bootstrap=bootstrap
+        self.user=None;self.bootstrap=bootstrap;self.access_refresh_attempted=False
     def _call(self,operation,**values):
         from .yyb.auth import AuthError
         try:return self.client.call(operation,**values)
@@ -105,26 +105,43 @@ class OperationAuthorization:
                 self.meta.update(status='needs_rescan',last_error='wechat_authorization_expired')
                 if not self.bootstrap:self.save(self.meta)
                 raise ToolError('wechat_authorization_expired','wechat_authorization') from None
+            if getattr(error,'access_invalid',False):
+                raise ToolError('wechat_access_token_invalid','wechat_authorization') from None
             raise ToolError('wechat_'+error.code,'wechat_authorization') from None
     def code(self):
-        result=self._call('code',credentials=self.meta['credentials'])
+        for _ in range(2):
+            try:
+                result=self._call('code',credentials=self.meta['credentials'])
+                break
+            except ToolError as error:
+                if error.reason!='wechat_access_token_invalid':raise
+                if self.access_refresh_attempted:
+                    self.meta.update(status='access_rejected',last_error='wechat_access_token_invalid')
+                    self.account['wechat_authorization']=self.meta
+                    if not self.bootstrap:self.save(self.meta)
+                    raise
+                self.access_refresh_attempted=True
+                self._refresh_credentials(force=True)
+                self._call('forget',credentials=self.meta['credentials'])
         code=result.get('code') if isinstance(result,dict) else None
         if not isinstance(code,str) or not code.strip() or len(code)>1024:
             raise ToolError('wechat_code_unavailable','wechat_authorization')
         return code
-    def prepare(self):
-        if not self.bootstrap and not authorization_eligible(self.account):
-            raise ToolError('wechat_authorization_required','wechat_authorization')
+    def _refresh_credentials(self,*,force=False):
         credentials=self.meta.get('credentials') or {}
         if not credentials.get('openid') or not credentials.get('accesstoken'):
             raise ToolError('wechat_authorization_required','wechat_authorization')
-        if credentials.get('expires_at',0)<=time.time()+60:
+        if force or credentials.get('expires_at',0)<=time.time()+60:
             if not credentials.get('refreshtoken'):raise ToolError('wechat_authorization_expired','wechat_authorization')
             rotated=self._call('refresh',credentials=credentials)
             if rotated.get('openid')!=credentials['openid'] or not rotated.get('accesstoken') or rotated.get('expires_at',0)<=time.time():
                 raise ToolError('wechat_refresh_response_invalid','wechat_authorization')
             self.meta['credentials']=rotated;self.account['wechat_authorization']=self.meta
             self.save(self.meta)  # Preserve rotation even if later school/code calls fail.
+    def prepare(self):
+        if not self.bootstrap and not authorization_eligible(self.account):
+            raise ToolError('wechat_authorization_required','wechat_authorization')
+        self._refresh_credentials()
         self.user=self.gateway.bind(self.code())
         if self.user['username']!=self.account['student_id'] or self.meta.get('school_user_id') not in (None,self.user['id']):
             raise ToolError('wechat_identity_mismatch','wechat_identity')
