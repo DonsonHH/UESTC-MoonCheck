@@ -4,8 +4,9 @@ This distribution includes MoonUESTC integration and dashboard code from https:/
 
 ## Referenced projects
 
+- Ryan-Orion/UESTC-MoonCheck, https://github.com/Ryan-Orion/UESTC-MoonCheck — MIT. Current reference for YYB OAuth, renewable grants and native mini-program login codes. The deployment also adapts CAS error diagnostics from commit `553b1dc`, included in the reviewed upstream head `6f14a3a`. The complete notice is preserved in third_party/mooncheck-LICENSE.txt.
 - GoodNight, https://github.com/beichenO2/GoodNight — MIT. Referenced for current-day record checks, durable pre-submission claims, and reconciliation after uncertain submissions. The complete notice is preserved in third_party/GoodNight.LICENSE.
-- UESTC-MoonCheck, https://github.com/richard297779/UESTC-MoonCheck — its supplied LICENSE contains the MIT permission and warranty text. Referenced for CAS login protocol, trusted-browser cookie, portal warmup and request schema.
+- Earlier UESTC-MoonCheck reference, https://github.com/richard297779/UESTC-MoonCheck — its supplied LICENSE contains the MIT permission and warranty text. The historical reference covered CAS login protocol, trusted-browser cookie, portal warmup and request schema.
 - coordtransform, https://github.com/wandergis/coordtransform — MIT. WGS-84 forward-transform formulas are ported in moonuestc/coordinates.py. The complete notice is preserved in third_party/coordtransform.LICENSE.
 
 ## MoonCheck license formatting

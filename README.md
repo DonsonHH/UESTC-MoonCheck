@@ -1,6 +1,6 @@
 <div align="center">
 
-# 晚安成电 · MoonUESTC
+# 晚安成电 · UESTC-MoonCheck 部署版
 
 **管理学校认证、签到计划与学校确认记录。**
 
@@ -18,13 +18,15 @@
 
 </div>
 
-本部署版维护于 `donson/jetson-portal` 分支，整合既有 MoonUESTC 用户端、管理端与新版微信授权；`main` 保留原项目，便于跟踪上游。
+当前微信授权、令牌续期和小程序取码方案参考 [Ryan-Orion/UESTC-MoonCheck](https://github.com/Ryan-Orion/UESTC-MoonCheck)，并与既有学生端、私有管理端和每日计划整合。
+
+本部署版维护于 `donson/jetson-portal` 分支；`main` 跟踪上游原版。早期 MoonUESTC 代码的来源和许可保留在 [第三方说明](THIRD_PARTY_NOTICES.md) 中。
 
 ## 新版微信授权
 
 学校提交接口需要真实的小程序操作票据，单独的学校密码、Cookie 或浏览器指纹不能替代它。开启 `MOON_ENABLE_WECHAT_AUTH=1` 后，学生可在 `/app/authorization` 完成本人微信扫码授权。
 
-授权通道参考 [UESTC-MoonCheck 原版](https://github.com/DonsonHH/UESTC-MoonCheck/tree/main)，使用 Python 获取登录码、刷新授权令牌，并向学校申请每次提交所需的新票据。服务器不运行完整微信客户端，也不需要 Windows 电脑常驻。
+授权通道使用 Python 获取登录码、刷新授权令牌，并向学校申请每次提交所需的新票据。服务器不运行完整微信客户端，也不需要 Windows 电脑常驻。
 
 扫码前单独说明并确认授权令牌的加密托管；扫码学校身份必须与当前账号一致。令牌不返回前端，登录码、原生会话与操作票据只在内存使用。未授权、撤销授权或身份不一致的账号继续等待，不解除其他账号的保护。授权失效需要本人重新扫码，学校二次验证仍通过学校原页面完成。
 

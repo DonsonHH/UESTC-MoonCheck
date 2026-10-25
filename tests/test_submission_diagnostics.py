@@ -199,6 +199,26 @@ class DashboardDiagnostics(WebCase):
 
 
 class LoginErrorMetadata(unittest.TestCase):
+    def test_temporary_cas_http_failures_do_not_mark_the_password_rejected(self):
+        class TemporaryCas(DiagnosticTransport):
+            def request(self,method,url,**values):
+                if values['stage']=='cas_submit':
+                    return f.response(url,{'code':9100,'message':'认证服务暂时不可用'},status=self.failure_status)
+                return super().request(method,url,**values)
+        for status in (429,500,503):
+            with self.subTest(status=status),tempfile.TemporaryDirectory(dir=os.environ.get('MOON_TEST_TMP')) as directory:
+                state=State(directory);transport=TemporaryCas();transport.failure_status=status
+                try:
+                    with self.assertRaises(ToolError) as caught:
+                        run_account(copy.deepcopy(f.ACCOUNT),'checkin',state,directory,clock=lambda:f.INSTANT,
+                            sleep=lambda _:None,transport_factory=lambda *a:transport)
+                    self.assertEqual(caught.exception.reason,'http_error')
+                    self.assertEqual(caught.exception.http_status,status)
+                    self.assertEqual(caught.exception.api_code,9100)
+                    self.assertIn('认证服务暂时不可用',caught.exception.school_message)
+                    self.assertFalse(state.auth_requirement(account_key(f.ACCOUNT)))
+                    self.assertFalse(state.claimed(account_key(f.ACCOUNT),f.DAY));self.assertEqual(transport.post_count,0)
+                finally:state.close()
     def test_http_200_login_rejection_is_not_misreported_as_school_business_code(self):
         with tempfile.TemporaryDirectory(dir=os.environ.get('MOON_TEST_TMP')) as directory:
             state=State(directory);transport=DiagnosticTransport();transport.login_rejected=True

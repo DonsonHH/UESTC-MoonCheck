@@ -9,6 +9,7 @@ from html.parser import HTMLParser
 
 from .errors import AuthRequired, ToolError
 from .diagnostics import school_message
+from .cas_diagnostics import response_hints
 from .school_policy import SCHOOL_CLIENT_CODES, SCHOOL_CLIENT_REASON
 
 ORIGIN = "https://jzsz.uestc.edu.cn"
@@ -64,6 +65,10 @@ class School:
         self.before_login=before_login
         self.operation_required=False
         self._operation_ticket=None
+
+    def _response_error(self,response,reason,stage,*,kind=ToolError,secrets=()):
+        cookies=tuple(cookie.value for cookie in (getattr(self.transport,'jar',None) or ()))
+        return kind(reason,stage,**response_hints(response,self.account,extra_secrets=(*cookies,*secrets)))
 
     def authorize_operation(self,value,expires_at):
         if not isinstance(value,str) or not re.fullmatch(r'[A-Za-z0-9_-]{43}',value) or type(expires_at) not in (int,float) or not math.isfinite(expires_at) or not time.time()+5<expires_at<time.time()+3600:
@@ -140,16 +145,16 @@ class School:
             headers={"Accept": "application/json, text/plain, */*", "Origin": ORIGIN,
                      "Referer": ORIGIN + "/", "Cache-Control": "no-cache"})
         if r.status in (301, 302, 303, 401, 403):
-            raise AuthRequired("portal_session_rejected", "portal_warmup")
+            raise self._response_error(r,'portal_session_rejected','portal_warmup',kind=AuthRequired)
         if r.status != 200:
-            raise ToolError("portal_warmup_failed", "portal_warmup", http_status=r.status)
+            raise self._response_error(r,'http_error' if r.status==429 or r.status>=500 else 'portal_warmup_failed','portal_warmup')
         self.emit("stage_ok", stage="portal_warmup")
         r = self.transport.follow(ENTRY, stage="micro_app_entry", headers={"Referer": ORIGIN + "/"})
         u = urllib.parse.urlsplit(r.url)
         if (r.status != 200 or u.hostname != "jzsz.uestc.edu.cn"
                 or u.path != "/daily-checkin-h5/index.html"
                 or urllib.parse.parse_qs(u.query).get("appId") != ["294"]):
-            raise AuthRequired("micro_app_unauthorized", "micro_app_entry")
+            raise self._response_error(r,'micro_app_unauthorized','micro_app_entry',kind=AuthRequired)
         self.emit("stage_ok", stage="micro_app_entry")
         return self.today()
 
@@ -171,8 +176,9 @@ class School:
         r = self.transport.request("GET", LOGIN, stage="cas_page",
                                    headers={"Accept": "text/html,application/xhtml+xml"})
         if r.status != 200:
-            raise ToolError("login_page_http_error", "cas_page", http_status=r.status)
-        fields = login_fields(r.text)
+            raise self._response_error(r,'http_error' if r.status==429 or r.status>=500 else 'login_page_http_error','cas_page')
+        try:fields = login_fields(r.text)
+        except ToolError as error:raise self._response_error(r,error.reason,error.stage) from None
         self.emit("stage_ok", stage="cas_page")
         self.budget()
         form = {"username": self.account["student_id"],
@@ -181,6 +187,9 @@ class School:
                 "cllt": "userNameLogin", "dllt": "generalLogin", "lt": ""}
         r = self.transport.request("POST", LOGIN, stage="cas_submit", form=form,
                                    headers={"Origin": "https://idas.uestc.edu.cn", "Referer": LOGIN})
+        secrets=(fields['execution'],fields['pwdEncryptSalt'],form['password'])
+        if r.status==429 or r.status>=500:
+            raise self._response_error(r,'http_error','cas_submit',secrets=secrets)
         loc = r.headers.get("Location", "")
         u = urllib.parse.urlsplit(urllib.parse.urljoin(LOGIN, loc))
         if (r.status in (301, 302, 303) and loc and u.scheme == "https"
@@ -191,11 +200,12 @@ class School:
             self.emit("stage_ok", stage="cas_authenticated")
             try:
                 return self.enter()
-            except AuthRequired:
-                raise ToolError("micro_app_unauthorized_after_login", "micro_app_entry") from None
+            except AuthRequired as error:
+                raise ToolError('micro_app_unauthorized_after_login',error.stage,error.api_code,
+                    http_status=error.http_status,school_message=error.school_message) from None
         if re.search(r"reAuthLoginView|isMultifactor|authLogin", loc) or re.search(
                 r"二次验证|多因素认证|isMultifactor\s*[=:]\s*['\"]?true", r.text):
-            raise ToolError("need_manual_mfa", "cas_submit")
+            raise self._response_error(r,'need_manual_mfa','cas_submit',secrets=secrets)
         if re.search(r"验证码错误|请输入验证码|滑块验证|安全验证", r.text):
-            raise ToolError("need_manual_captcha", "cas_submit")
-        raise ToolError("login_rejected", "cas_submit", http_status=r.status)
+            raise self._response_error(r,'need_manual_captcha','cas_submit',secrets=secrets)
+        raise self._response_error(r,'login_rejected','cas_submit',secrets=secrets)

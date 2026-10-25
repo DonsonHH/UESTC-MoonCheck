@@ -24,10 +24,13 @@ class _Text(HTMLParser):
         if not self.skip:self.parts.append(value)
 
 
-def school_message(value,account=None):
+def school_message(value,account=None,*,extra_secrets=()):
     if not isinstance(value,str) or not value.strip():return None
     if len(value)>8192:return '学校错误信息过长，已省略'
     secrets=[]
+    for secret in extra_secrets:
+        if isinstance(secret,str) and secret:
+            secrets.extend([secret,html.escape(secret),urllib.parse.quote(secret,safe=''),urllib.parse.quote_plus(secret),json.dumps(secret,ensure_ascii=True)[1:-1],base64.b64encode(secret.encode()).decode()])
     for key in ('student_id','password','browser_fingerprint','user_agent'):
         secret=(account or {}).get(key)
         if isinstance(secret,str) and secret:

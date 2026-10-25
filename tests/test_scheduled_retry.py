@@ -28,6 +28,30 @@ class Retrying(unittest.TestCase):
   worker=WebWorker(self.store,runner=lambda *a,**kw:(_ for _ in ()).throw(ToolError('need_manual_captcha','cas_submit')))
   with patch('moonuestc.web_service.now',return_value=INSTANT):worker.run_one()
   job=self.store.jobs(self.admin,self.job);self.assertEqual(job['state'],'failed');self.assertEqual(job['attempt'],0);self.assertNotIn('retryAt',job['result'])
+ def test_manual_failure_leaves_the_automatic_job_and_retry_budget_available(self):
+  from moonuestc.state import State
+  from moonuestc.runner import account_key
+  import datetime as dt
+  with self.store.db(True) as db:db.execute("UPDATE web_jobs SET source='manual' WHERE id=?",(self.job,))
+  calls=[]
+  def runner(*args,**kwargs):
+   calls.append(True)
+   if len(calls)==1:raise ToolError('http_error','cas_submit',http_status=503)
+   return {'result':'confirmed'}
+  worker=WebWorker(self.store,runner=runner)
+  with patch('moonuestc.web_service.now',return_value=INSTANT),patch('moonuestc.web_store.now',return_value=INSTANT),patch('moonuestc.web_store.time.time',return_value=INSTANT.timestamp()):
+   worker.run_one();manual=self.store.jobs(self.admin,self.job)
+   self.assertEqual(manual['state'],'failed');self.assertEqual(manual['attempt'],0)
+   self.assertNotIn('retryAt',manual['result'])
+   payload=self.store.job_payload({'account_id':self.account['id']});state=State(self.tmp.name)
+   try:
+    day=(INSTANT.date()-dt.timedelta(days=1)).isoformat();state.claim(account_key(payload),day);state.outcome(account_key(payload),day,'confirmed')
+   finally:state.close()
+   self.store.save_account(self.admin,{'automatic':True},self.account['id'])
+   worker.schedule_once();self.assertTrue(worker.run_one())
+   with self.store.db() as db:scheduled=db.execute("SELECT state,attempt FROM web_jobs WHERE source='schedule'").fetchall()
+   self.assertEqual([(r['state'],r['attempt']) for r in scheduled],[('done',0)])
+  self.assertEqual(len(calls),2)
  def test_unknown_submission_retry_only_rechecks_no_second_post(self):
   from test_workflows import FakeTransport
   from moonuestc.runner import run_account
