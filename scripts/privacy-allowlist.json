@@ -1748,7 +1748,25 @@
       "path": "tests/test_yyb_access_recovery.py",
       "match_sha256": "db1cfcb635758cba1bee11a8048d6b64d9089fc62043cf4f8065bec7b4b14790",
       "reason": "Reviewed synthetic identity literal used only in offline early-access rejection tests; no deployed account or token."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "frontend/browser-tests/refresh-races.mjs",
+      "match_sha256": "5e8c1b26be77c57aac200dd411139c01ab9bd45aaa664808c2f00f1fb857a79d",
+      "reason": "Reviewed synthetic browser-test identity; the loopback fixture blocks all external requests and uses no deployed account."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "frontend/browser-tests/refresh-races.mjs",
+      "match_sha256": "ab2fedf9420dd18d191c00db0c6930312a743aece8879ae6ae6bcb052032ccbc",
+      "reason": "Reviewed synthetic browser-test identity; the loopback fixture blocks all external requests and uses no deployed account."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "frontend/browser-tests/refresh-races.mjs",
+      "match_sha256": "e26e78d61acc33e215d73590f716331407103fba6839d8d702812d6cf92531ef",
+      "reason": "Reviewed synthetic browser-test identity; the loopback fixture blocks all external requests and uses no deployed account."
     }
   ],
-  "reviewed_donson_feature_version": "0.5.1+donson.24"
+  "reviewed_donson_feature_version": "0.5.1+donson.25"
 }

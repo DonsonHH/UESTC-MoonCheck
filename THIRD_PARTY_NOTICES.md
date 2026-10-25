@@ -39,3 +39,14 @@ They are used under the MIT license in `third_party/mooncheck-LICENSE.txt`.
 The protocol implementation credits YYB-Go-Enhanced revision `8a9497397abc`.
 Local changes use package-relative imports; account isolation, encrypted
 persistence, school identity checks and portal integration are Donson additions.
+
+Early access-token rejection recovery was subsequently adapted from Ryan-Orion
+commit `15afe426ccaedf9657160002a9597a9a4b00bbe1`, retaining the deployment's
+account isolation, encrypted grants and one-use school ticket checks.
+
+## Development browser tests
+
+Playwright 1.62.1 (Apache-2.0) is a development dependency for the frontend's
+isolated browser regression tests. Its package retains the upstream license.
+CI installs browser binaries separately; they are not part of the application
+image or the student frontend bundle.

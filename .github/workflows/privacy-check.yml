@@ -25,6 +25,11 @@ jobs:
         run: |
           node --test tests/*.test.mjs
           pnpm run build
+      - name: Browser response ordering and session lifetime regressions
+        working-directory: frontend
+        run: |
+          pnpm exec playwright install --with-deps chromium
+          pnpm run test:browser
   application:
     runs-on: ubuntu-24.04
     steps:

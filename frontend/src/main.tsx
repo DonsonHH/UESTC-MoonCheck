@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {createRoot} from 'react-dom/client';
 import {Dialog, AlertDialog, Switch, Collapsible, DropdownMenu} from 'radix-ui';
 import {Toaster, toast} from 'sonner';
@@ -79,6 +79,7 @@ function SettingsForm({account,admin=false,owners=[],onSaved,onCancel,onReload}:
  <div className="form-section"><div className="switch-row"><div><strong>每日自动运行</strong><p>{account?.ready_for_automation?'已满足首次学校确认条件':'首次手动打卡获学校确认后解锁'}</p></div><Switch.Root className="switch" checked={automatic} onCheckedChange={setAutomatic} disabled={!account?.ready_for_automation} aria-label="每日自动运行"><Switch.Thumb/></Switch.Root></div><label>每日执行时间（北京时间）<input type="time" required value={runAt} onChange={e=>setRunAt(e.target.value)}/></label></div><div className="modal-actions"><Button type="button" onClick={onCancel}>取消</Button><Button type="submit" className="primary" busy={busy} disabled={conflict}>保存配置<Check size={17}/></Button></div></form>
 }
 function Dashboard({session,admin,onLogout,route}:{session:Session;admin:boolean;onLogout:()=>void;route:string}){
+ const loadVersion=useRef(0),mounted=useRef(true),activeLoad=useRef<number|null>(null);
  const[accounts,setAccounts]=useState<Account[]>([]),[jobs,setJobs]=useState<Job[]>([]),[users,setUsers]=useState<User[]>([]),[loading,setLoading]=useState(true),[failed,setFailed]=useState(''),[query,setQuery]=useState('');
  const[planDirty,setPlanDirty]=useState(false);const tab=resolveTab(route,admin);const setTab=(id:string)=>{const go=()=>navigate((admin?adminRoutes:studentRoutes)[id]||(admin?'/admin':'/app'));if(!admin&&tab==='settings'&&id!==tab&&planDirty){setConfirm({title:'放弃未保存的修改？',description:'每日计划还未保存，离开后将保留原计划。',label:'离开页面',action:async()=>{setPlanDirty(false);go()}})}else go()};
  const[edit,setEdit]=useState<Account|null>(null),[editing,setEditing]=useState(false),[confirm,setConfirm]=useState<{title:string;description:string;label?:string;danger?:boolean;action:()=>Promise<void>}|null>(null),[help,setHelp]=useState(false),[passwordOpen,setPasswordOpen]=useState(false);
@@ -87,9 +88,25 @@ function Dashboard({session,admin,onLogout,route}:{session:Session;admin:boolean
  const[historyRefresh,setHistoryRefresh]=useState(0);
  const[reauthenticating,setReauthenticating]=useState(false),[renewToken,setRenewToken]=useState('');
  const[oldPass,setOldPass]=useState(''),[newPass,setNewPass]=useState(''),[passBusy,setPassBusy]=useState(false);
- async function load(silent=false){if(!silent){setLoading(true);setHistoryRefresh(n=>n+1)}try{const[a,j,u]=await Promise.all([api('/api/accounts'),api('/api/jobs'),admin?api('/api/users'):Promise.resolve({users:[]})]);setAccounts(a.accounts);setJobs(j.jobs);setUsers(u.users);setFailed('')}catch(e){if((e as ApiError).code==='login_required'){onLogout();return}setFailed((e as Error).message)}finally{setLoading(false)}}
- useEffect(()=>{load();const timer=setInterval(()=>load(true),15000);return()=>clearInterval(timer)},[admin]);
- useEffect(()=>{if(!jobs.some(j=>['queued','running'].includes(j.state)))return;const timer=setInterval(()=>load(true),2000);return()=>clearInterval(timer)},[jobs.some(j=>['queued','running'].includes(j.state))]);
+ async function load(silent=false){
+  if(!mounted.current)return;
+  const version=++loadVersion.current,current=()=>mounted.current&&version===loadVersion.current;
+  activeLoad.current=version;
+  if(!silent){setLoading(true);setHistoryRefresh(n=>n+1)}
+  try{
+   const[a,j,u]=await Promise.all([api('/api/accounts'),api('/api/jobs'),admin?api('/api/users'):Promise.resolve({users:[]})]);
+   if(!current())return;
+   setAccounts(a.accounts);setJobs(j.jobs);setUsers(u.users);setFailed('');
+  }catch(e){
+   if(!current())return;
+   if((e as ApiError).code==='login_required'){onLogout();return}
+   setFailed((e as Error).message);
+  }finally{if(activeLoad.current===version)activeLoad.current=null;if(current())setLoading(false)}
+ }
+ // Polls share one in-flight refresh; explicit user actions may supersede it.
+ function poll(){if(activeLoad.current===null)void load(true)}
+ useEffect(()=>{mounted.current=true;load();const timer=setInterval(poll,15000);return()=>{mounted.current=false;loadVersion.current++;activeLoad.current=null;clearInterval(timer)}},[admin]);
+ useEffect(()=>{if(!jobs.some(j=>['queued','running'].includes(j.state)))return;const timer=setInterval(poll,2000);return()=>clearInterval(timer)},[admin,jobs.some(j=>['queued','running'].includes(j.state))]);
  const account=accounts[0];const active=jobs.filter(j=>['queued','running'].includes(j.state)).length;const issue=accounts.filter(a=>a.last_result&&['error','submission_unknown','submission_rejected','record_changed'].includes(a.last_result.result||'')).length;
  async function run(a:Account,mode:string){const id=toast.loading('正在安排'+modeName(mode)+'…');try{await api('/api/accounts/'+a.id+'/jobs','POST',{mode,...(mode==='checkin'?{confirm:true}:{})});toast.success('任务已加入队列',{id});await load(true)}catch(e){toast.error((e as Error).message,{id})}}
  async function reauthenticate(){setReauthenticating(true);try{const value=await api('/api/portal/reauthenticate','POST',{viewport:{width:Math.max(300,Math.min(1920,innerWidth-24)),height:Math.max(240,Math.min(1400,innerHeight-125))}});await awaitSchoolCredentials(value);setRenewToken(value.onboarding_csrf)}catch(e){const error=e as ApiError;toast.error(error.code==='school_login_rejected'?'学校拒绝了已保存的登录信息；若密码已修改，请退出后使用新密码登录。':error.message)}finally{setReauthenticating(false)}}

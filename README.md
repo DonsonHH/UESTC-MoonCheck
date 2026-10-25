@@ -117,7 +117,11 @@ cd frontend
 pnpm install --frozen-lockfile
 pnpm build
 node --test tests/*.test.mjs
+pnpm exec playwright install chromium
+pnpm run test:browser
 ```
+
+浏览器回归只访问本机测试服务器，使用合成账号和接口响应，检查慢网络刷新和登录会话恢复。
 
 应用测试使用合成数据。浏览器验证的原生回归位于 `browser_assist/tests/test_navigation.py`，在带 Chromium 的 helper 镜像中运行。发布前配置本机 [隐私门禁](docs/privacy-release.md)，检查源码、全部待发布历史和当前实例的敏感匹配值。
 
