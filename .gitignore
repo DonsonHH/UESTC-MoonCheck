@@ -1,42 +1,25 @@
-# Actual configuration and credentials
+# Runtime and private configuration
 .env
 .env.*
 !.env.example
-*.key
-*.pem
-*.p12
-*.pfx
-
-# Runtime data, backups and exports
+config/
 data/
 backups/
-*.db
-*.db-*
-*.sqlite
-*.sqlite3
-*.csv
-*.tar
-*.tar.gz
-*.tgz
-*.zip
-
-# Development and generated files
-.venv/
-venv/
+release-artifacts/
+*.sqlite3*
+*.lwp
+*.log
+*.pem
+*.key
+*.p12
+*initial-admin*
 __pycache__/
 *.py[cod]
-.pytest_cache/
-.coverage
-htmlcov/
-work/
-*.log
-*.pid
-*.lock
-*.bak
-*.tmp
-.idea/
-.vscode/
-.DS_Store
-Thumbs.db
-Desktop.ini
-*~
+.venv/
+# Private deployment records do not belong in the public repository.
+SHANGHAI-*
+AGENTS.md
+node_modules/
+frontend/node_modules/
+frontend/.vite/
+deploy/admin-ssh.config

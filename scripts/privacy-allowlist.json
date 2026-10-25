@@ -1,0 +1,1748 @@
+{
+  "version": 1,
+  "reviewed_source_commit": "29af43e664582892f8c0ddbb7aabc3b153cb317d",
+  "reviewed_image_digest": "sha256:5a2ec97fe5b19f5067aed5b09886060686df0ceb9b53597a9e8021e1cdf4b630",
+  "exceptions": [
+    {
+      "rule": "cookie_header",
+      "path": "usr/local/lib/python3.12/http/cookies.py",
+      "match_sha256": "3ad5b764ec2f6a90a2685655bd28cd59c09ade776660f6890649e9294861a1e2",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "cookie_header",
+      "path": "usr/local/lib/python3.12/http/cookies.py",
+      "match_sha256": "c9edac0fbec70c1d9a920d32d29b15526eee26632b3e3a50374a2b288906c56c",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "cookie_header",
+      "path": "usr/local/lib/python3.12/http/cookies.py",
+      "match_sha256": "ca0a8da3e3cd7eac8ea8b5ff06838618e878615991d7864c294885c9115a4714",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "cookie_header",
+      "path": "usr/local/lib/python3.12/http/cookies.py",
+      "match_sha256": "d8ff6af4b811cbde865d67e948c4e25f7b162d36f9f0b843ad8f73e8e9d66c5b",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "cookie_header",
+      "path": "usr/local/lib/python3.12/site-packages/werkzeug/sansio/http.py",
+      "match_sha256": "51d7173f55456300abf82bfd379bd6dbcc431afa3dc6d80809437e2d91c10e63",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "cookie_header",
+      "path": "wheelhouse/werkzeug-3.1.9-py3-none-any.whl!/werkzeug/sansio/http.py",
+      "match_sha256": "51d7173f55456300abf82bfd379bd6dbcc431afa3dc6d80809437e2d91c10e63",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "COORDINATE-SOURCE.json",
+      "match_sha256": "2aa4434504cb73f259524b13d6237cab3cf03d7df9482e9738acb852672d21ff",
+      "reason": "Reviewed synthetic test/installer input, public coordinate name or application validation literal; no deployed identity."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "COORDINATE-SOURCE.json",
+      "match_sha256": "4674e79fca770f2797e68e03df731959d2ea1a9492a5ad87be0f20382aaef986",
+      "reason": "Reviewed synthetic test/installer input, public coordinate name or application validation literal; no deployed identity."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "COORDINATE-SOURCE.json",
+      "match_sha256": "62eb49699868efbd59659b1c8ecf52ad9f6746b6d0b74e249450a61ee3f23409",
+      "reason": "Reviewed synthetic test/installer input, public coordinate name or application validation literal; no deployed identity."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "COORDINATE-SOURCE.json",
+      "match_sha256": "6d1e1d4632397c6b114a67726dfdd5b86a36441d794fc889927508a2d12b4cac",
+      "reason": "Reviewed synthetic test/installer input, public coordinate name or application validation literal; no deployed identity."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "COORDINATE-SOURCE.json",
+      "match_sha256": "8cccf53c263c3ff1fca2176b9518a7d80c942ea8303a528320dd2b8c595aae25",
+      "reason": "Reviewed synthetic test/installer input, public coordinate name or application validation literal; no deployed identity."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "COORDINATE-SOURCE.json",
+      "match_sha256": "bd1f76437a7200c0649bd4e8dee51d58fac6b426a408759b5c7ebce635a3c375",
+      "reason": "Reviewed synthetic test/installer input, public coordinate name or application validation literal; no deployed identity."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "COORDINATE-SOURCE.json",
+      "match_sha256": "e3bb0a65665c89a810736dec2c4866eaaeafa2be38dec5d4c01aa864d30cf647",
+      "reason": "Reviewed synthetic test/installer input, public coordinate name or application validation literal; no deployed identity."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "COORDINATE-SOURCE.json",
+      "match_sha256": "e878c7c6ece38516f0e4beadd219069e9d14c7c5427c11e82dfa9f77ffa4d7c4",
+      "reason": "Reviewed synthetic test/installer input, public coordinate name or application validation literal; no deployed identity."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "app/COORDINATE-SOURCE.json",
+      "match_sha256": "2aa4434504cb73f259524b13d6237cab3cf03d7df9482e9738acb852672d21ff",
+      "reason": "Same reviewed public application/test/coordinate literal in the validated image."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "app/COORDINATE-SOURCE.json",
+      "match_sha256": "4674e79fca770f2797e68e03df731959d2ea1a9492a5ad87be0f20382aaef986",
+      "reason": "Same reviewed public application/test/coordinate literal in the validated image."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "app/COORDINATE-SOURCE.json",
+      "match_sha256": "62eb49699868efbd59659b1c8ecf52ad9f6746b6d0b74e249450a61ee3f23409",
+      "reason": "Same reviewed public application/test/coordinate literal in the validated image."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "app/COORDINATE-SOURCE.json",
+      "match_sha256": "6d1e1d4632397c6b114a67726dfdd5b86a36441d794fc889927508a2d12b4cac",
+      "reason": "Same reviewed public application/test/coordinate literal in the validated image."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "app/COORDINATE-SOURCE.json",
+      "match_sha256": "8cccf53c263c3ff1fca2176b9518a7d80c942ea8303a528320dd2b8c595aae25",
+      "reason": "Same reviewed public application/test/coordinate literal in the validated image."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "app/COORDINATE-SOURCE.json",
+      "match_sha256": "bd1f76437a7200c0649bd4e8dee51d58fac6b426a408759b5c7ebce635a3c375",
+      "reason": "Same reviewed public application/test/coordinate literal in the validated image."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "app/COORDINATE-SOURCE.json",
+      "match_sha256": "e3bb0a65665c89a810736dec2c4866eaaeafa2be38dec5d4c01aa864d30cf647",
+      "reason": "Same reviewed public application/test/coordinate literal in the validated image."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "app/COORDINATE-SOURCE.json",
+      "match_sha256": "e878c7c6ece38516f0e4beadd219069e9d14c7c5427c11e82dfa9f77ffa4d7c4",
+      "reason": "Same reviewed public application/test/coordinate literal in the validated image."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "app/moonuestc/__main__.py",
+      "match_sha256": "ae95141e95ac1db48d54f33908e202c5e6ae45e2080fe9068c3c97304421957f",
+      "reason": "Same reviewed public application/test/coordinate literal in the validated image."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "app/moonuestc/web_app.py",
+      "match_sha256": "188967e3f85bfbc553e7461b9da395b86305db4bb3e29a6863724aaa1b45fe9d",
+      "reason": "Same reviewed public application/test/coordinate literal in the validated image."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "app/tests/dashboard_helpers.py",
+      "match_sha256": "03697bafa2b20441c0ecbd9ea81188a176d27914100f28769c823ad91d025f67",
+      "reason": "Same reviewed public application/test/coordinate literal in the validated image."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "app/tests/dashboard_helpers.py",
+      "match_sha256": "18702bc66518f267ed08cf5d8d9cf919bf440addfa4d64cd68094a2b16527270",
+      "reason": "Same reviewed public application/test/coordinate literal in the validated image."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "app/tests/dashboard_helpers.py",
+      "match_sha256": "43882d4202a06726ce835d3b77bb4ffc72a3a8836f212ccdd8e0335cba0e18ac",
+      "reason": "Same reviewed public application/test/coordinate literal in the validated image."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "app/tests/dashboard_helpers.py",
+      "match_sha256": "605a03e324e0437a43a62128059996fc994bde8b3d135ff8ac7cf3fd09f7e418",
+      "reason": "Same reviewed public application/test/coordinate literal in the validated image."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "app/tests/dashboard_helpers.py",
+      "match_sha256": "8e2afb9383df7984417217b594d32a7597b562560eb02f4fdcf8e4de2570aa56",
+      "reason": "Same reviewed public application/test/coordinate literal in the validated image."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "app/tests/dashboard_helpers.py",
+      "match_sha256": "ccb1ac5510bac8783386909f755c5b850703fc769efa8dd30ddf87352445b2ef",
+      "reason": "Same reviewed public application/test/coordinate literal in the validated image."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "app/tests/test_dashboard_auth.py",
+      "match_sha256": "02fe1c37595a558c1f8f9da667e87b6567eda8c17c3c6b8031fe7f3b80d031e2",
+      "reason": "Same reviewed public application/test/coordinate literal in the validated image."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "app/tests/test_dashboard_auth.py",
+      "match_sha256": "0c7912f1387dfdb3c36de241e7ee4d3970df5971a54ed45d6aaed7dd95400042",
+      "reason": "Same reviewed public application/test/coordinate literal in the validated image."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "app/tests/test_dashboard_auth.py",
+      "match_sha256": "113512c4f294865a6f8f912fbbe96731a255b04433c3f144c87740da28084ad5",
+      "reason": "Same reviewed public application/test/coordinate literal in the validated image."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "app/tests/test_dashboard_auth.py",
+      "match_sha256": "17f1113b7e5b6303efee0b283f60687282f4533ac53f9436ac023fd1cf625b9d",
+      "reason": "Same reviewed public application/test/coordinate literal in the validated image."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "app/tests/test_dashboard_auth.py",
+      "match_sha256": "18702bc66518f267ed08cf5d8d9cf919bf440addfa4d64cd68094a2b16527270",
+      "reason": "Same reviewed public application/test/coordinate literal in the validated image."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "app/tests/test_dashboard_auth.py",
+      "match_sha256": "461dcf7539db77ecf57c5cc65d8f2975bdd430c83164380149c7ac11a715881d",
+      "reason": "Same reviewed public application/test/coordinate literal in the validated image."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "app/tests/test_dashboard_auth.py",
+      "match_sha256": "4a6c10a75ac1173d507a2c1e6e98f584e4fe210234beaaadb42c59ed404f04c7",
+      "reason": "Same reviewed public application/test/coordinate literal in the validated image."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "app/tests/test_dashboard_auth.py",
+      "match_sha256": "7f630847595be8499b661e5c080c4ea3f7865b5f4b148a25a0489e494afaebab",
+      "reason": "Same reviewed public application/test/coordinate literal in the validated image."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "app/tests/test_dashboard_auth.py",
+      "match_sha256": "8d8521844317c6fb915faf2df7b9d6aefe2a952a3e8af3482f9bd44e60ed576c",
+      "reason": "Same reviewed public application/test/coordinate literal in the validated image."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "app/tests/test_dashboard_auth.py",
+      "match_sha256": "ca13f31410cde81335b7c6102642b24b71204944d1eef2963a7e7bacf40fb128",
+      "reason": "Same reviewed public application/test/coordinate literal in the validated image."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "app/tests/test_dashboard_auth.py",
+      "match_sha256": "e80dc2a0dcf08b474e99a9ce4aac218501fbe25ef56240217f7ce75c208eaab7",
+      "reason": "Same reviewed public application/test/coordinate literal in the validated image."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "app/tests/test_dashboard_auth.py",
+      "match_sha256": "fdfd5d5506909434957f7e5a1f61a08bbf7adb876443cd0455281c2f7f133c95",
+      "reason": "Same reviewed public application/test/coordinate literal in the validated image."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "app/tests/test_dashboard_registration.py",
+      "match_sha256": "18702bc66518f267ed08cf5d8d9cf919bf440addfa4d64cd68094a2b16527270",
+      "reason": "Same reviewed public application/test/coordinate literal in the validated image."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "app/tests/test_dashboard_registration.py",
+      "match_sha256": "2953d8efa41899db28a6cf802cc7e863bee76a024cf096f767cd672a79941065",
+      "reason": "Same reviewed public application/test/coordinate literal in the validated image."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "app/tests/test_dashboard_registration.py",
+      "match_sha256": "3ff73a94d04b160fa3b09974f8f82ffa45e03275c5d3052ada0ff5021ce86745",
+      "reason": "Same reviewed public application/test/coordinate literal in the validated image."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "app/tests/test_dashboard_registration.py",
+      "match_sha256": "7b952157a7e23ae6a8f2e136b421ae5df133a3e7116bbf737779d53a596fe32b",
+      "reason": "Same reviewed public application/test/coordinate literal in the validated image."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "app/tests/test_dashboard_registration.py",
+      "match_sha256": "8677631b6189815dfdf764bc5dfbbb05fb0e3ab8498724f81c4c25df73186f2b",
+      "reason": "Same reviewed public application/test/coordinate literal in the validated image."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "app/tests/test_dashboard_registration.py",
+      "match_sha256": "8f060c099cd8f2c4e6da519b09a8131727ff66b2640f3915eb2cd89d75770849",
+      "reason": "Same reviewed public application/test/coordinate literal in the validated image."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "app/tests/test_dashboard_registration.py",
+      "match_sha256": "94a854830f7a427b2bba03164f06f84f86211d72869d8e994a4f1358c3429753",
+      "reason": "Same reviewed public application/test/coordinate literal in the validated image."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "app/tests/test_dashboard_registration.py",
+      "match_sha256": "e54ad80657aeafd7fe97aae71a970dd88def2d950194da84d69ba6dd97ad3e40",
+      "reason": "Same reviewed public application/test/coordinate literal in the validated image."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "app/tests/test_dashboard_registration.py",
+      "match_sha256": "fce4dc0c31c3b98e15bd635121c9e7fe8ccd62396dcba91b439ba9be68f74edc",
+      "reason": "Same reviewed public application/test/coordinate literal in the validated image."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "app/tests/test_submission_diagnostics.py",
+      "match_sha256": "2409ca9e5f013b29aad915d6151fa75c05c4d7c23b1f9b1e9cbf104178999f6d",
+      "reason": "Same reviewed public application/test/coordinate literal in the validated image."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "app/tests/test_submission_diagnostics.py",
+      "match_sha256": "33e9a17abc3c351c582ee546f709bd608102df74027d3bde19c2da7d3486f67d",
+      "reason": "Same reviewed public application/test/coordinate literal in the validated image."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "app/tests/test_submission_diagnostics.py",
+      "match_sha256": "870d2b893319229d1d37550413b8adf34031716b27e5d5a11c1e2ce6418b8853",
+      "reason": "Same reviewed public application/test/coordinate literal in the validated image."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "app/tests/test_submission_diagnostics.py",
+      "match_sha256": "9d3ce2d8db324c3a763547fe1d71992ffd45e89d526e32d85523d77cd40489a3",
+      "reason": "Same reviewed public application/test/coordinate literal in the validated image."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "app/tests/test_workflows.py",
+      "match_sha256": "36e068fba636176bea5f0566455f81c848905965bfc6314a4f4c942b5b77b898",
+      "reason": "Same reviewed public application/test/coordinate literal in the validated image."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "app/tests/test_workflows.py",
+      "match_sha256": "4d07e019fbb37f385de5d663934ebd12a3aa08a75bd798fce2707130f331f3c3",
+      "reason": "Same reviewed public application/test/coordinate literal in the validated image."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "app/tests/test_workflows.py",
+      "match_sha256": "6c71c5e4f2fac61b3afc67dad03ad6d0433f8f1a41bf81e44e2b489820d2fac5",
+      "reason": "Same reviewed public application/test/coordinate literal in the validated image."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "app/tests/test_workflows.py",
+      "match_sha256": "9a12ceca74c050ba9b90e1f23063c98447c8f8cb8699e12e4602e7d88edd4ba3",
+      "reason": "Same reviewed public application/test/coordinate literal in the validated image."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "app/tests/test_workflows.py",
+      "match_sha256": "b157c9f6d701d64af03d9e64f9d0aaac867a9b221a695a5cf9bf128af9a84c7e",
+      "reason": "Same reviewed public application/test/coordinate literal in the validated image."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "app/tests/test_workflows.py",
+      "match_sha256": "c3409860e84d12562d8249154c20b8eaf1884946352c699d6e5dec7682c9b4d2",
+      "reason": "Same reviewed public application/test/coordinate literal in the validated image."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "app/tests/test_workflows.py",
+      "match_sha256": "d9917c2a4c77bf4d8c0136da20a23b0f1192dd262da00bc4ada03e83fda75427",
+      "reason": "Same reviewed public application/test/coordinate literal in the validated image."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "moonuestc/__main__.py",
+      "match_sha256": "ae95141e95ac1db48d54f33908e202c5e6ae45e2080fe9068c3c97304421957f",
+      "reason": "Reviewed synthetic test/installer input, public coordinate name or application validation literal; no deployed identity."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "moonuestc/web_app.py",
+      "match_sha256": "188967e3f85bfbc553e7461b9da395b86305db4bb3e29a6863724aaa1b45fe9d",
+      "reason": "Reviewed synthetic test/installer input, public coordinate name or application validation literal; no deployed identity."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "scripts/tests/test_privacy_gate.py",
+      "match_sha256": "95afe935870ec7f848a0d67cfb34c2101e8d04b188cbb05f5abf8e9ad6a16602",
+      "reason": "Reviewed synthetic test/installer input, public coordinate name or application validation literal; no deployed identity."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "scripts/verify-installation.py",
+      "match_sha256": "0080ab2342a79c3b8fd7669790b0e7df1357531a4d76a20a12721ef0e569dace",
+      "reason": "Reviewed synthetic test/installer input, public coordinate name or application validation literal; no deployed identity."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/dashboard_helpers.py",
+      "match_sha256": "03697bafa2b20441c0ecbd9ea81188a176d27914100f28769c823ad91d025f67",
+      "reason": "Reviewed synthetic test/installer input, public coordinate name or application validation literal; no deployed identity."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/dashboard_helpers.py",
+      "match_sha256": "18702bc66518f267ed08cf5d8d9cf919bf440addfa4d64cd68094a2b16527270",
+      "reason": "Reviewed synthetic test/installer input, public coordinate name or application validation literal; no deployed identity."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/dashboard_helpers.py",
+      "match_sha256": "43882d4202a06726ce835d3b77bb4ffc72a3a8836f212ccdd8e0335cba0e18ac",
+      "reason": "Reviewed synthetic test/installer input, public coordinate name or application validation literal; no deployed identity."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/dashboard_helpers.py",
+      "match_sha256": "605a03e324e0437a43a62128059996fc994bde8b3d135ff8ac7cf3fd09f7e418",
+      "reason": "Reviewed synthetic test/installer input, public coordinate name or application validation literal; no deployed identity."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/dashboard_helpers.py",
+      "match_sha256": "8e2afb9383df7984417217b594d32a7597b562560eb02f4fdcf8e4de2570aa56",
+      "reason": "Reviewed synthetic test/installer input, public coordinate name or application validation literal; no deployed identity."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/dashboard_helpers.py",
+      "match_sha256": "ccb1ac5510bac8783386909f755c5b850703fc769efa8dd30ddf87352445b2ef",
+      "reason": "Reviewed synthetic test/installer input, public coordinate name or application validation literal; no deployed identity."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_dashboard_auth.py",
+      "match_sha256": "02fe1c37595a558c1f8f9da667e87b6567eda8c17c3c6b8031fe7f3b80d031e2",
+      "reason": "Reviewed synthetic test/installer input, public coordinate name or application validation literal; no deployed identity."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_dashboard_auth.py",
+      "match_sha256": "0c7912f1387dfdb3c36de241e7ee4d3970df5971a54ed45d6aaed7dd95400042",
+      "reason": "Reviewed synthetic test/installer input, public coordinate name or application validation literal; no deployed identity."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_dashboard_auth.py",
+      "match_sha256": "113512c4f294865a6f8f912fbbe96731a255b04433c3f144c87740da28084ad5",
+      "reason": "Reviewed synthetic test/installer input, public coordinate name or application validation literal; no deployed identity."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_dashboard_auth.py",
+      "match_sha256": "17f1113b7e5b6303efee0b283f60687282f4533ac53f9436ac023fd1cf625b9d",
+      "reason": "Reviewed synthetic test/installer input, public coordinate name or application validation literal; no deployed identity."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_dashboard_auth.py",
+      "match_sha256": "18702bc66518f267ed08cf5d8d9cf919bf440addfa4d64cd68094a2b16527270",
+      "reason": "Reviewed synthetic test/installer input, public coordinate name or application validation literal; no deployed identity."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_dashboard_auth.py",
+      "match_sha256": "461dcf7539db77ecf57c5cc65d8f2975bdd430c83164380149c7ac11a715881d",
+      "reason": "Reviewed synthetic test/installer input, public coordinate name or application validation literal; no deployed identity."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_dashboard_auth.py",
+      "match_sha256": "4a6c10a75ac1173d507a2c1e6e98f584e4fe210234beaaadb42c59ed404f04c7",
+      "reason": "Reviewed synthetic test/installer input, public coordinate name or application validation literal; no deployed identity."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_dashboard_auth.py",
+      "match_sha256": "7f630847595be8499b661e5c080c4ea3f7865b5f4b148a25a0489e494afaebab",
+      "reason": "Reviewed synthetic test/installer input, public coordinate name or application validation literal; no deployed identity."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_dashboard_auth.py",
+      "match_sha256": "8d8521844317c6fb915faf2df7b9d6aefe2a952a3e8af3482f9bd44e60ed576c",
+      "reason": "Reviewed synthetic test/installer input, public coordinate name or application validation literal; no deployed identity."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_dashboard_auth.py",
+      "match_sha256": "ca13f31410cde81335b7c6102642b24b71204944d1eef2963a7e7bacf40fb128",
+      "reason": "Reviewed synthetic test/installer input, public coordinate name or application validation literal; no deployed identity."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_dashboard_auth.py",
+      "match_sha256": "e80dc2a0dcf08b474e99a9ce4aac218501fbe25ef56240217f7ce75c208eaab7",
+      "reason": "Reviewed synthetic test/installer input, public coordinate name or application validation literal; no deployed identity."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_dashboard_auth.py",
+      "match_sha256": "fdfd5d5506909434957f7e5a1f61a08bbf7adb876443cd0455281c2f7f133c95",
+      "reason": "Reviewed synthetic test/installer input, public coordinate name or application validation literal; no deployed identity."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_dashboard_registration.py",
+      "match_sha256": "18702bc66518f267ed08cf5d8d9cf919bf440addfa4d64cd68094a2b16527270",
+      "reason": "Reviewed synthetic test/installer input, public coordinate name or application validation literal; no deployed identity."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_dashboard_registration.py",
+      "match_sha256": "2953d8efa41899db28a6cf802cc7e863bee76a024cf096f767cd672a79941065",
+      "reason": "Reviewed synthetic test/installer input, public coordinate name or application validation literal; no deployed identity."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_dashboard_registration.py",
+      "match_sha256": "3ff73a94d04b160fa3b09974f8f82ffa45e03275c5d3052ada0ff5021ce86745",
+      "reason": "Reviewed synthetic test/installer input, public coordinate name or application validation literal; no deployed identity."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_dashboard_registration.py",
+      "match_sha256": "7b952157a7e23ae6a8f2e136b421ae5df133a3e7116bbf737779d53a596fe32b",
+      "reason": "Reviewed synthetic test/installer input, public coordinate name or application validation literal; no deployed identity."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_dashboard_registration.py",
+      "match_sha256": "8677631b6189815dfdf764bc5dfbbb05fb0e3ab8498724f81c4c25df73186f2b",
+      "reason": "Reviewed synthetic test/installer input, public coordinate name or application validation literal; no deployed identity."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_dashboard_registration.py",
+      "match_sha256": "8f060c099cd8f2c4e6da519b09a8131727ff66b2640f3915eb2cd89d75770849",
+      "reason": "Reviewed synthetic test/installer input, public coordinate name or application validation literal; no deployed identity."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_dashboard_registration.py",
+      "match_sha256": "94a854830f7a427b2bba03164f06f84f86211d72869d8e994a4f1358c3429753",
+      "reason": "Reviewed synthetic test/installer input, public coordinate name or application validation literal; no deployed identity."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_dashboard_registration.py",
+      "match_sha256": "e54ad80657aeafd7fe97aae71a970dd88def2d950194da84d69ba6dd97ad3e40",
+      "reason": "Reviewed synthetic test/installer input, public coordinate name or application validation literal; no deployed identity."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_dashboard_registration.py",
+      "match_sha256": "fce4dc0c31c3b98e15bd635121c9e7fe8ccd62396dcba91b439ba9be68f74edc",
+      "reason": "Reviewed synthetic test/installer input, public coordinate name or application validation literal; no deployed identity."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_submission_diagnostics.py",
+      "match_sha256": "2409ca9e5f013b29aad915d6151fa75c05c4d7c23b1f9b1e9cbf104178999f6d",
+      "reason": "Reviewed synthetic test/installer input, public coordinate name or application validation literal; no deployed identity."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_submission_diagnostics.py",
+      "match_sha256": "33e9a17abc3c351c582ee546f709bd608102df74027d3bde19c2da7d3486f67d",
+      "reason": "Reviewed synthetic test/installer input, public coordinate name or application validation literal; no deployed identity."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_submission_diagnostics.py",
+      "match_sha256": "870d2b893319229d1d37550413b8adf34031716b27e5d5a11c1e2ce6418b8853",
+      "reason": "Reviewed synthetic test/installer input, public coordinate name or application validation literal; no deployed identity."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_submission_diagnostics.py",
+      "match_sha256": "9d3ce2d8db324c3a763547fe1d71992ffd45e89d526e32d85523d77cd40489a3",
+      "reason": "Reviewed synthetic test/installer input, public coordinate name or application validation literal; no deployed identity."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_workflows.py",
+      "match_sha256": "36e068fba636176bea5f0566455f81c848905965bfc6314a4f4c942b5b77b898",
+      "reason": "Reviewed synthetic test/installer input, public coordinate name or application validation literal; no deployed identity."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_workflows.py",
+      "match_sha256": "4d07e019fbb37f385de5d663934ebd12a3aa08a75bd798fce2707130f331f3c3",
+      "reason": "Reviewed synthetic test/installer input, public coordinate name or application validation literal; no deployed identity."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_workflows.py",
+      "match_sha256": "6c71c5e4f2fac61b3afc67dad03ad6d0433f8f1a41bf81e44e2b489820d2fac5",
+      "reason": "Reviewed synthetic test/installer input, public coordinate name or application validation literal; no deployed identity."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_workflows.py",
+      "match_sha256": "9a12ceca74c050ba9b90e1f23063c98447c8f8cb8699e12e4602e7d88edd4ba3",
+      "reason": "Reviewed synthetic test/installer input, public coordinate name or application validation literal; no deployed identity."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_workflows.py",
+      "match_sha256": "b157c9f6d701d64af03d9e64f9d0aaac867a9b221a695a5cf9bf128af9a84c7e",
+      "reason": "Reviewed synthetic test/installer input, public coordinate name or application validation literal; no deployed identity."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_workflows.py",
+      "match_sha256": "c3409860e84d12562d8249154c20b8eaf1884946352c699d6e5dec7682c9b4d2",
+      "reason": "Reviewed synthetic test/installer input, public coordinate name or application validation literal; no deployed identity."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_workflows.py",
+      "match_sha256": "d9917c2a4c77bf4d8c0136da20a23b0f1192dd262da00bc4ada03e83fda75427",
+      "reason": "Reviewed synthetic test/installer input, public coordinate name or application validation literal; no deployed identity."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "usr/bin/openssl",
+      "match_sha256": "7e1c552ae86d7c8dd6d5c3db69ca495d9b323ab8782ad6738fcac14baf5efacf",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "usr/local/lib/python3.12/_compat_pickle.py",
+      "match_sha256": "f47869b30e991dab04208ce12cdb0d0b0374bebfe91264da811ebd496e32aa4e",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "usr/local/lib/python3.12/ensurepip/_bundled/pip-25.0.1-py3-none-any.whl!/pip/_internal/utils/misc.py",
+      "match_sha256": "271ed1b6d9e1de152bfe225e9afa5acfefc56ff87da3e1833de7c0022d2b7fb3",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "usr/local/lib/python3.12/ensurepip/_bundled/pip-25.0.1-py3-none-any.whl!/pip/_vendor/rich/_emoji_codes.py",
+      "match_sha256": "667073848cafb1fa10812af958806b31f5161a118bec2b04d16e6bbf17e40160",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "usr/local/lib/python3.12/lib2to3/fixes/fix_imports.py",
+      "match_sha256": "f47869b30e991dab04208ce12cdb0d0b0374bebfe91264da811ebd496e32aa4e",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "usr/local/lib/python3.12/site-packages/flask/__pycache__/config.cpython-312.pyc",
+      "match_sha256": "378c80e2ede2500499e82d71343868d6548506c8755c3f36b50d00ab3aa3de93",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "usr/local/lib/python3.12/site-packages/flask/config.py",
+      "match_sha256": "378c80e2ede2500499e82d71343868d6548506c8755c3f36b50d00ab3aa3de93",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "usr/local/lib/python3.12/site-packages/pip/_internal/utils/misc.py",
+      "match_sha256": "271ed1b6d9e1de152bfe225e9afa5acfefc56ff87da3e1833de7c0022d2b7fb3",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "usr/local/lib/python3.12/site-packages/pip/_vendor/rich/_emoji_codes.py",
+      "match_sha256": "667073848cafb1fa10812af958806b31f5161a118bec2b04d16e6bbf17e40160",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "usr/local/lib/python3.12/urllib/request.py",
+      "match_sha256": "0e6189ce0156266415b8ca28aa3088d797a7076488d17d2881d9f216036ad62f",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "usr/local/lib/python3.12/urllib/request.py",
+      "match_sha256": "c0f074c8444aae7f04dc2e3c063cf7b91b9f90151f4509c51637537ea3e764eb",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "wheelhouse/flask-3.1.3-py3-none-any.whl!/flask/config.py",
+      "match_sha256": "378c80e2ede2500499e82d71343868d6548506c8755c3f36b50d00ab3aa3de93",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "credential_environment",
+      "path": "app/moonuestc/web_app.py",
+      "match_sha256": "cdb80805c992927a8fa7cb870a9d31d9db1cded81a443b9b14e39529a3684b50",
+      "reason": "Same reviewed public application/test/coordinate literal in the validated image."
+    },
+    {
+      "rule": "credential_environment",
+      "path": "moonuestc/web_app.py",
+      "match_sha256": "cdb80805c992927a8fa7cb870a9d31d9db1cded81a443b9b14e39529a3684b50",
+      "reason": "Reviewed synthetic test/installer input, public coordinate name or application validation literal; no deployed identity."
+    },
+    {
+      "rule": "credential_environment",
+      "path": "usr/lib/x86_64-linux-gnu/perl-base/Config_heavy.pl",
+      "match_sha256": "51765dbe92210fa97ff47de3f2587a36a852e50ee04a586d6bba669de82ca9a0",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "credential_environment",
+      "path": "usr/lib/x86_64-linux-gnu/perl-base/Config_heavy.pl",
+      "match_sha256": "a42bfbd5e4af851160824036894dc0feac422c73423efa8f1f36a689bd1ba453",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "machine_path",
+      "path": "usr/local/lib/libpython3.12.so.1.0",
+      "match_sha256": "6eb23d6ed39822bd8ec5203694179133fb8fa2a58773df9536d1a48431bf21d7",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "machine_path",
+      "path": "usr/local/lib/python3.12/ensurepip/_bundled/pip-25.0.1-py3-none-any.whl!/pip/_internal/utils/urls.py",
+      "match_sha256": "edfa81c320b8f0b776375512aa7a2a8545633a1188c67f61cd78e969edf314da",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "machine_path",
+      "path": "usr/local/lib/python3.12/ensurepip/_bundled/pip-25.0.1-py3-none-any.whl!/pip/_vendor/distlib/t32.exe",
+      "match_sha256": "8d05b06388d8643a64a730133db06fad64a7f2bc5e80a74e73339241e1a37910",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "machine_path",
+      "path": "usr/local/lib/python3.12/ensurepip/_bundled/pip-25.0.1-py3-none-any.whl!/pip/_vendor/distlib/t64-arm.exe",
+      "match_sha256": "901c1d2de87e4fb6bda02725b1bc38b76155cb4f8e37abba9f1bb8dffaa78727",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "machine_path",
+      "path": "usr/local/lib/python3.12/ensurepip/_bundled/pip-25.0.1-py3-none-any.whl!/pip/_vendor/distlib/t64.exe",
+      "match_sha256": "f49a425652c0671b766e741d2729547372105aef1e90ed8847cb8280ea9493cb",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "machine_path",
+      "path": "usr/local/lib/python3.12/ensurepip/_bundled/pip-25.0.1-py3-none-any.whl!/pip/_vendor/distlib/w32.exe",
+      "match_sha256": "c4f7ef594253bbf40cfaefb24780137f8a1bc64dcbc8104acc6f444eb30fae44",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "machine_path",
+      "path": "usr/local/lib/python3.12/ensurepip/_bundled/pip-25.0.1-py3-none-any.whl!/pip/_vendor/distlib/w64-arm.exe",
+      "match_sha256": "697647715ad260341e3ed7cdcf982221b3f18ef85a1ca64ba194c2089f0aaa3b",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "machine_path",
+      "path": "usr/local/lib/python3.12/ensurepip/_bundled/pip-25.0.1-py3-none-any.whl!/pip/_vendor/distlib/w64.exe",
+      "match_sha256": "a9ebb3720c1e5d8477bf20d30363d5b418496c9394fa3b3124430fcc88f51f6e",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "machine_path",
+      "path": "usr/local/lib/python3.12/ntpath.py",
+      "match_sha256": "6eb23d6ed39822bd8ec5203694179133fb8fa2a58773df9536d1a48431bf21d7",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "machine_path",
+      "path": "usr/local/lib/python3.12/site-packages/pip/_internal/utils/urls.py",
+      "match_sha256": "edfa81c320b8f0b776375512aa7a2a8545633a1188c67f61cd78e969edf314da",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "machine_path",
+      "path": "usr/local/lib/python3.12/site-packages/pip/_vendor/distlib/t32.exe",
+      "match_sha256": "8d05b06388d8643a64a730133db06fad64a7f2bc5e80a74e73339241e1a37910",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "machine_path",
+      "path": "usr/local/lib/python3.12/site-packages/pip/_vendor/distlib/t64-arm.exe",
+      "match_sha256": "901c1d2de87e4fb6bda02725b1bc38b76155cb4f8e37abba9f1bb8dffaa78727",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "machine_path",
+      "path": "usr/local/lib/python3.12/site-packages/pip/_vendor/distlib/t64.exe",
+      "match_sha256": "f49a425652c0671b766e741d2729547372105aef1e90ed8847cb8280ea9493cb",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "machine_path",
+      "path": "usr/local/lib/python3.12/site-packages/pip/_vendor/distlib/w32.exe",
+      "match_sha256": "c4f7ef594253bbf40cfaefb24780137f8a1bc64dcbc8104acc6f444eb30fae44",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "machine_path",
+      "path": "usr/local/lib/python3.12/site-packages/pip/_vendor/distlib/w64-arm.exe",
+      "match_sha256": "697647715ad260341e3ed7cdcf982221b3f18ef85a1ca64ba194c2089f0aaa3b",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "machine_path",
+      "path": "usr/local/lib/python3.12/site-packages/pip/_vendor/distlib/w64.exe",
+      "match_sha256": "a9ebb3720c1e5d8477bf20d30363d5b418496c9394fa3b3124430fcc88f51f6e",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "machine_path",
+      "path": "usr/local/lib/python3.12/venv/scripts/common/Activate.ps1",
+      "match_sha256": "9a6ae2aae0e3affa23348206e61535b77a08721fe8de29fbc500f71ed9d28023",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "password_hash",
+      "path": "usr/local/lib/python3.12/site-packages/argon2_cffi-25.1.0.dist-info/METADATA",
+      "match_sha256": "58337da801e06a04436bdfe3a42e165773c4270a113ffdad6dc995172631c186",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "password_hash",
+      "path": "wheelhouse/argon2_cffi-25.1.0-py3-none-any.whl!/argon2_cffi-25.1.0.dist-info/METADATA",
+      "match_sha256": "58337da801e06a04436bdfe3a42e165773c4270a113ffdad6dc995172631c186",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/lib/x86_64-linux-gnu/libgnutls.so.30.34.3",
+      "match_sha256": "293216817f0d585f0b54f225582f59e7b2e2a795b5f8002e2d71c5e3d49ce9b0",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/lib/x86_64-linux-gnu/libgnutls.so.30.34.3",
+      "match_sha256": "7c4c63ee462e0e700cd9e29c8e0f730b3f1b484c4abdd83f1e69fcd477c061fa",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/lib/x86_64-linux-gnu/libgnutls.so.30.34.3",
+      "match_sha256": "91ea1699ff6b1a34b4a1d500a9c75a808441e47b9ea68da6fb0195e01ce1dc61",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/lib/x86_64-linux-gnu/libgnutls.so.30.34.3",
+      "match_sha256": "934b3e9bfd9936c5e30c7f0ed7d36a05e2044f755c0aa433e1d6bef6a68d1391",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/lib/x86_64-linux-gnu/libgnutls.so.30.34.3",
+      "match_sha256": "a0b9679665e29ac220dfb0b366317e1b9dd5fe31e9def8b2e511669a041389ae",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/lib/x86_64-linux-gnu/libgnutls.so.30.34.3",
+      "match_sha256": "a4d138d7ef9748464117b44fb9c0a4b5b85a1599a127d02690abaa96d03c16e6",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/lib/x86_64-linux-gnu/libgnutls.so.30.34.3",
+      "match_sha256": "d039c8119a029ab9f9c83c04d67002d887b6bc6026c4264402ab27cdf24cf138",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/lib/x86_64-linux-gnu/libgnutls.so.30.34.3",
+      "match_sha256": "ef237ea8db4f2ae9ee100e8ced96d29b5dceb0e6a948443e6b8a00b1791f9ec9",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/lib/x86_64-linux-gnu/libgnutls.so.30.34.3",
+      "match_sha256": "f8766749b0c6f9b5661364568226af0ba7ae8d87c0073df24e440de4417521cd",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/lib/x86_64-linux-gnu/libgnutls.so.30.34.3",
+      "match_sha256": "fa0b06a72461ec0a963dcfccb8d5b61bd88a6074fc7271573bff68ab86b8c1af",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/local/lib/python3.12/site-packages/Crypto/SelfTest/Cipher/__pycache__/test_pkcs1_15.cpython-312.pyc",
+      "match_sha256": "ecf597fac8c4f2b41fc1a4c4f98153e6352e84ade162bdcbceee3fa9825ac2a9",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/local/lib/python3.12/site-packages/Crypto/SelfTest/Cipher/test_pkcs1_15.py",
+      "match_sha256": "ecf597fac8c4f2b41fc1a4c4f98153e6352e84ade162bdcbceee3fa9825ac2a9",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/local/lib/python3.12/site-packages/Crypto/SelfTest/Protocol/__pycache__/test_ecdh.cpython-312.pyc",
+      "match_sha256": "12dc6fc7e34c02030ce7d6020c19823eefbd0b44c07b5032f7337f5aaaa46889",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/local/lib/python3.12/site-packages/Crypto/SelfTest/Protocol/__pycache__/test_ecdh.cpython-312.pyc",
+      "match_sha256": "983f8d75843dd037342be1720338fde5f7c6ec0c2c0a1dd28f3ea364c779194b",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/local/lib/python3.12/site-packages/Crypto/SelfTest/Protocol/__pycache__/test_ecdh.cpython-312.pyc",
+      "match_sha256": "b6d5b9d19a654fe538a97026640f755468bfc02ff042030467fd9a839c893895",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/local/lib/python3.12/site-packages/Crypto/SelfTest/Protocol/__pycache__/test_ecdh.cpython-312.pyc",
+      "match_sha256": "f882000d6d7f8c56589355766d8529e7d49d4a17d9c56a9b621b4b60b051c31e",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/local/lib/python3.12/site-packages/Crypto/SelfTest/Protocol/test_ecdh.py",
+      "match_sha256": "2dab98c832b703e5b0dfcda3574041a308df65e1f18462f3b8a922d947e0da32",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/local/lib/python3.12/site-packages/Crypto/SelfTest/Protocol/test_ecdh.py",
+      "match_sha256": "3d375ac4f1c3299725c606ae9ce2a8f2ddc2581cddc20179b020d15e4670b668",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/local/lib/python3.12/site-packages/Crypto/SelfTest/Protocol/test_ecdh.py",
+      "match_sha256": "ef7a62276fad7b75f97e4f8efda8bab568d298def12017bb212169c00bfc97f0",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/local/lib/python3.12/site-packages/Crypto/SelfTest/Protocol/test_ecdh.py",
+      "match_sha256": "fe6fb61337395ed7a61d9b41ea5f77e2e32fe4bb0c0b83533409e9d292ed1f4c",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/local/lib/python3.12/site-packages/Crypto/SelfTest/PublicKey/__pycache__/test_import_DSA.cpython-312.pyc",
+      "match_sha256": "a7003829a65dd067bf74da3e26dd4dca1a8b275b6ce062cbe1dd28128a611b97",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/local/lib/python3.12/site-packages/Crypto/SelfTest/PublicKey/__pycache__/test_import_DSA.cpython-312.pyc",
+      "match_sha256": "a78b5214119a24b6b1752889af2074afb474227857d589a9778321920e45dbb0",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/local/lib/python3.12/site-packages/Crypto/SelfTest/PublicKey/__pycache__/test_import_DSA.cpython-312.pyc",
+      "match_sha256": "c13b0ab5204528e985e99638294156dd0a192e99835e47cf419603db45ec5a7f",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/local/lib/python3.12/site-packages/Crypto/SelfTest/PublicKey/__pycache__/test_import_DSA.cpython-312.pyc",
+      "match_sha256": "c6cc7e2cae48a22a442801c69d58c1e42370db0864988c0e9f224eda6bf7ee66",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/local/lib/python3.12/site-packages/Crypto/SelfTest/PublicKey/__pycache__/test_import_ECC.cpython-312.pyc",
+      "match_sha256": "1308640cbd64d117d09969dbc38b19946b53f727e5405e2cf3988e47c55e3303",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/local/lib/python3.12/site-packages/Crypto/SelfTest/PublicKey/__pycache__/test_import_ECC.cpython-312.pyc",
+      "match_sha256": "3b989977728c362c0333bfc65116df2397a7d656bdb1eb431d631e8fc68007cc",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/local/lib/python3.12/site-packages/Crypto/SelfTest/PublicKey/__pycache__/test_import_ECC.cpython-312.pyc",
+      "match_sha256": "5a2b43792025de01407f9ec36680a80f8ce658b74fe6df96593e60da32f6d350",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/local/lib/python3.12/site-packages/Crypto/SelfTest/PublicKey/__pycache__/test_import_ECC.cpython-312.pyc",
+      "match_sha256": "718a0083336dee327595a9d3c1a90ff9f1fe19b6459ebccee3b40e6244c10e78",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/local/lib/python3.12/site-packages/Crypto/SelfTest/PublicKey/__pycache__/test_import_ECC.cpython-312.pyc",
+      "match_sha256": "744cb9c18a53bacf6b677ba7b67d1229899d1094897a5d9192317c582877fbbf",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/local/lib/python3.12/site-packages/Crypto/SelfTest/PublicKey/__pycache__/test_import_ECC.cpython-312.pyc",
+      "match_sha256": "809133286579f4e77cbb8765c9449755305882aa0146befe988aec9025f3b91e",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/local/lib/python3.12/site-packages/Crypto/SelfTest/PublicKey/__pycache__/test_import_ECC.cpython-312.pyc",
+      "match_sha256": "819d1c55d6c1ed90b20a6aa41fdb73f7f4f6bcaca51d577e3dc75b26e58273fd",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/local/lib/python3.12/site-packages/Crypto/SelfTest/PublicKey/__pycache__/test_import_ECC.cpython-312.pyc",
+      "match_sha256": "8b93b9b22df3bf3f3c951fbe3fb86608d7f428a1f97b571a5ae747cbb4fba679",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/local/lib/python3.12/site-packages/Crypto/SelfTest/PublicKey/__pycache__/test_import_ECC.cpython-312.pyc",
+      "match_sha256": "aef012b11349d63ea16e10a5b0d8dbf1082e2f2d1e7edfbefee3bfa5baa61bcc",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/local/lib/python3.12/site-packages/Crypto/SelfTest/PublicKey/__pycache__/test_import_ECC.cpython-312.pyc",
+      "match_sha256": "c019c912b1abb2bb8d17a113e4db96fe59df03d5e22344224dc1a68577e09527",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/local/lib/python3.12/site-packages/Crypto/SelfTest/PublicKey/__pycache__/test_import_ECC.cpython-312.pyc",
+      "match_sha256": "faa6cd7577a706d24e958eab6cf644bf930a2fa6260a803c93b1c24e67010351",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/local/lib/python3.12/site-packages/Crypto/SelfTest/PublicKey/__pycache__/test_import_RSA.cpython-312.pyc",
+      "match_sha256": "0aa4e84a2cbb762b72df82d48df1699815f29f633bcbf383c9b6c5b2acc6be36",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/local/lib/python3.12/site-packages/Crypto/SelfTest/PublicKey/__pycache__/test_import_RSA.cpython-312.pyc",
+      "match_sha256": "329b710ef729e326f586977983751195850d9ee92a7261ef7160b7706c2a4912",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/local/lib/python3.12/site-packages/Crypto/SelfTest/PublicKey/__pycache__/test_import_RSA.cpython-312.pyc",
+      "match_sha256": "4c25a55413390205817c310c864c02d57ef3a3c0dff0d01075e0666e7de6a924",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/local/lib/python3.12/site-packages/Crypto/SelfTest/PublicKey/__pycache__/test_import_RSA.cpython-312.pyc",
+      "match_sha256": "e6fe239567d3627c62bc9479908f584847277e101563a0551e28f08c41c45f08",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/local/lib/python3.12/site-packages/Crypto/SelfTest/PublicKey/test_import_DSA.py",
+      "match_sha256": "a7003829a65dd067bf74da3e26dd4dca1a8b275b6ce062cbe1dd28128a611b97",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/local/lib/python3.12/site-packages/Crypto/SelfTest/PublicKey/test_import_DSA.py",
+      "match_sha256": "a78b5214119a24b6b1752889af2074afb474227857d589a9778321920e45dbb0",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/local/lib/python3.12/site-packages/Crypto/SelfTest/PublicKey/test_import_DSA.py",
+      "match_sha256": "c13b0ab5204528e985e99638294156dd0a192e99835e47cf419603db45ec5a7f",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/local/lib/python3.12/site-packages/Crypto/SelfTest/PublicKey/test_import_DSA.py",
+      "match_sha256": "c6cc7e2cae48a22a442801c69d58c1e42370db0864988c0e9f224eda6bf7ee66",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/local/lib/python3.12/site-packages/Crypto/SelfTest/PublicKey/test_import_ECC.py",
+      "match_sha256": "1308640cbd64d117d09969dbc38b19946b53f727e5405e2cf3988e47c55e3303",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/local/lib/python3.12/site-packages/Crypto/SelfTest/PublicKey/test_import_ECC.py",
+      "match_sha256": "3b989977728c362c0333bfc65116df2397a7d656bdb1eb431d631e8fc68007cc",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/local/lib/python3.12/site-packages/Crypto/SelfTest/PublicKey/test_import_ECC.py",
+      "match_sha256": "5a2b43792025de01407f9ec36680a80f8ce658b74fe6df96593e60da32f6d350",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/local/lib/python3.12/site-packages/Crypto/SelfTest/PublicKey/test_import_ECC.py",
+      "match_sha256": "718a0083336dee327595a9d3c1a90ff9f1fe19b6459ebccee3b40e6244c10e78",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/local/lib/python3.12/site-packages/Crypto/SelfTest/PublicKey/test_import_ECC.py",
+      "match_sha256": "744cb9c18a53bacf6b677ba7b67d1229899d1094897a5d9192317c582877fbbf",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/local/lib/python3.12/site-packages/Crypto/SelfTest/PublicKey/test_import_ECC.py",
+      "match_sha256": "809133286579f4e77cbb8765c9449755305882aa0146befe988aec9025f3b91e",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/local/lib/python3.12/site-packages/Crypto/SelfTest/PublicKey/test_import_ECC.py",
+      "match_sha256": "819d1c55d6c1ed90b20a6aa41fdb73f7f4f6bcaca51d577e3dc75b26e58273fd",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/local/lib/python3.12/site-packages/Crypto/SelfTest/PublicKey/test_import_ECC.py",
+      "match_sha256": "8b93b9b22df3bf3f3c951fbe3fb86608d7f428a1f97b571a5ae747cbb4fba679",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/local/lib/python3.12/site-packages/Crypto/SelfTest/PublicKey/test_import_ECC.py",
+      "match_sha256": "aef012b11349d63ea16e10a5b0d8dbf1082e2f2d1e7edfbefee3bfa5baa61bcc",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/local/lib/python3.12/site-packages/Crypto/SelfTest/PublicKey/test_import_ECC.py",
+      "match_sha256": "c019c912b1abb2bb8d17a113e4db96fe59df03d5e22344224dc1a68577e09527",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/local/lib/python3.12/site-packages/Crypto/SelfTest/PublicKey/test_import_ECC.py",
+      "match_sha256": "faa6cd7577a706d24e958eab6cf644bf930a2fa6260a803c93b1c24e67010351",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/local/lib/python3.12/site-packages/Crypto/SelfTest/PublicKey/test_import_RSA.py",
+      "match_sha256": "0aa4e84a2cbb762b72df82d48df1699815f29f633bcbf383c9b6c5b2acc6be36",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/local/lib/python3.12/site-packages/Crypto/SelfTest/PublicKey/test_import_RSA.py",
+      "match_sha256": "329b710ef729e326f586977983751195850d9ee92a7261ef7160b7706c2a4912",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/local/lib/python3.12/site-packages/Crypto/SelfTest/PublicKey/test_import_RSA.py",
+      "match_sha256": "4c25a55413390205817c310c864c02d57ef3a3c0dff0d01075e0666e7de6a924",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/local/lib/python3.12/site-packages/Crypto/SelfTest/PublicKey/test_import_RSA.py",
+      "match_sha256": "e6fe239567d3627c62bc9479908f584847277e101563a0551e28f08c41c45f08",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/local/lib/python3.12/site-packages/Crypto/SelfTest/Signature/__pycache__/test_pkcs1_15.cpython-312.pyc",
+      "match_sha256": "dac42e7de386292f8e3e36835059b4f63c50f1c75dd696b3f8ca820a96bbcebb",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/local/lib/python3.12/site-packages/Crypto/SelfTest/Signature/__pycache__/test_pss.cpython-312.pyc",
+      "match_sha256": "054f859fdf9a843ea4587d3ab19b34b90478324162f8e0871a67689794336257",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/local/lib/python3.12/site-packages/Crypto/SelfTest/Signature/test_pkcs1_15.py",
+      "match_sha256": "dac42e7de386292f8e3e36835059b4f63c50f1c75dd696b3f8ca820a96bbcebb",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "usr/local/lib/python3.12/site-packages/Crypto/SelfTest/Signature/test_pss.py",
+      "match_sha256": "2506a81d0e94e94bd8acae1405e1fd193e8a9092a74a2585bad361eeaec4cf93",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "wheelhouse/pycryptodome-3.23.0-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl!/Crypto/SelfTest/Cipher/test_pkcs1_15.py",
+      "match_sha256": "ecf597fac8c4f2b41fc1a4c4f98153e6352e84ade162bdcbceee3fa9825ac2a9",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "wheelhouse/pycryptodome-3.23.0-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl!/Crypto/SelfTest/Protocol/test_ecdh.py",
+      "match_sha256": "2dab98c832b703e5b0dfcda3574041a308df65e1f18462f3b8a922d947e0da32",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "wheelhouse/pycryptodome-3.23.0-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl!/Crypto/SelfTest/Protocol/test_ecdh.py",
+      "match_sha256": "3d375ac4f1c3299725c606ae9ce2a8f2ddc2581cddc20179b020d15e4670b668",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "wheelhouse/pycryptodome-3.23.0-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl!/Crypto/SelfTest/Protocol/test_ecdh.py",
+      "match_sha256": "ef7a62276fad7b75f97e4f8efda8bab568d298def12017bb212169c00bfc97f0",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "wheelhouse/pycryptodome-3.23.0-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl!/Crypto/SelfTest/Protocol/test_ecdh.py",
+      "match_sha256": "fe6fb61337395ed7a61d9b41ea5f77e2e32fe4bb0c0b83533409e9d292ed1f4c",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "wheelhouse/pycryptodome-3.23.0-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl!/Crypto/SelfTest/PublicKey/test_import_DSA.py",
+      "match_sha256": "a7003829a65dd067bf74da3e26dd4dca1a8b275b6ce062cbe1dd28128a611b97",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "wheelhouse/pycryptodome-3.23.0-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl!/Crypto/SelfTest/PublicKey/test_import_DSA.py",
+      "match_sha256": "a78b5214119a24b6b1752889af2074afb474227857d589a9778321920e45dbb0",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "wheelhouse/pycryptodome-3.23.0-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl!/Crypto/SelfTest/PublicKey/test_import_DSA.py",
+      "match_sha256": "c13b0ab5204528e985e99638294156dd0a192e99835e47cf419603db45ec5a7f",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "wheelhouse/pycryptodome-3.23.0-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl!/Crypto/SelfTest/PublicKey/test_import_DSA.py",
+      "match_sha256": "c6cc7e2cae48a22a442801c69d58c1e42370db0864988c0e9f224eda6bf7ee66",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "wheelhouse/pycryptodome-3.23.0-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl!/Crypto/SelfTest/PublicKey/test_import_ECC.py",
+      "match_sha256": "1308640cbd64d117d09969dbc38b19946b53f727e5405e2cf3988e47c55e3303",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "wheelhouse/pycryptodome-3.23.0-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl!/Crypto/SelfTest/PublicKey/test_import_ECC.py",
+      "match_sha256": "3b989977728c362c0333bfc65116df2397a7d656bdb1eb431d631e8fc68007cc",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "wheelhouse/pycryptodome-3.23.0-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl!/Crypto/SelfTest/PublicKey/test_import_ECC.py",
+      "match_sha256": "5a2b43792025de01407f9ec36680a80f8ce658b74fe6df96593e60da32f6d350",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "wheelhouse/pycryptodome-3.23.0-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl!/Crypto/SelfTest/PublicKey/test_import_ECC.py",
+      "match_sha256": "718a0083336dee327595a9d3c1a90ff9f1fe19b6459ebccee3b40e6244c10e78",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "wheelhouse/pycryptodome-3.23.0-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl!/Crypto/SelfTest/PublicKey/test_import_ECC.py",
+      "match_sha256": "744cb9c18a53bacf6b677ba7b67d1229899d1094897a5d9192317c582877fbbf",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "wheelhouse/pycryptodome-3.23.0-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl!/Crypto/SelfTest/PublicKey/test_import_ECC.py",
+      "match_sha256": "809133286579f4e77cbb8765c9449755305882aa0146befe988aec9025f3b91e",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "wheelhouse/pycryptodome-3.23.0-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl!/Crypto/SelfTest/PublicKey/test_import_ECC.py",
+      "match_sha256": "819d1c55d6c1ed90b20a6aa41fdb73f7f4f6bcaca51d577e3dc75b26e58273fd",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "wheelhouse/pycryptodome-3.23.0-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl!/Crypto/SelfTest/PublicKey/test_import_ECC.py",
+      "match_sha256": "8b93b9b22df3bf3f3c951fbe3fb86608d7f428a1f97b571a5ae747cbb4fba679",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "wheelhouse/pycryptodome-3.23.0-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl!/Crypto/SelfTest/PublicKey/test_import_ECC.py",
+      "match_sha256": "aef012b11349d63ea16e10a5b0d8dbf1082e2f2d1e7edfbefee3bfa5baa61bcc",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "wheelhouse/pycryptodome-3.23.0-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl!/Crypto/SelfTest/PublicKey/test_import_ECC.py",
+      "match_sha256": "c019c912b1abb2bb8d17a113e4db96fe59df03d5e22344224dc1a68577e09527",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "wheelhouse/pycryptodome-3.23.0-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl!/Crypto/SelfTest/PublicKey/test_import_ECC.py",
+      "match_sha256": "faa6cd7577a706d24e958eab6cf644bf930a2fa6260a803c93b1c24e67010351",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "wheelhouse/pycryptodome-3.23.0-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl!/Crypto/SelfTest/PublicKey/test_import_RSA.py",
+      "match_sha256": "0aa4e84a2cbb762b72df82d48df1699815f29f633bcbf383c9b6c5b2acc6be36",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "wheelhouse/pycryptodome-3.23.0-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl!/Crypto/SelfTest/PublicKey/test_import_RSA.py",
+      "match_sha256": "329b710ef729e326f586977983751195850d9ee92a7261ef7160b7706c2a4912",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "wheelhouse/pycryptodome-3.23.0-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl!/Crypto/SelfTest/PublicKey/test_import_RSA.py",
+      "match_sha256": "4c25a55413390205817c310c864c02d57ef3a3c0dff0d01075e0666e7de6a924",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "wheelhouse/pycryptodome-3.23.0-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl!/Crypto/SelfTest/PublicKey/test_import_RSA.py",
+      "match_sha256": "e6fe239567d3627c62bc9479908f584847277e101563a0551e28f08c41c45f08",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "wheelhouse/pycryptodome-3.23.0-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl!/Crypto/SelfTest/Signature/test_pkcs1_15.py",
+      "match_sha256": "dac42e7de386292f8e3e36835059b4f63c50f1c75dd696b3f8ca820a96bbcebb",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "private_key",
+      "path": "wheelhouse/pycryptodome-3.23.0-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl!/Crypto/SelfTest/Signature/test_pss.py",
+      "match_sha256": "2506a81d0e94e94bd8acae1405e1fd193e8a9092a74a2585bad361eeaec4cf93",
+      "reason": "Reviewed upstream library self-test key, documented example or compiler/build metadata from the audited official base and pinned wheels."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "browser_assist/tests/test_navigation.py",
+      "match_sha256": "b7afd8af890c0e23d27cc76c176171bc80b1f828ee294dfcc4b92aa53ae23a0b",
+      "reason": "Reviewed synthetic offline test input/fixture. No real school request or deployed credential; live private markers remain unwaivable."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "browser_assist/tests/test_navigation.py",
+      "match_sha256": "78120abcbbdc37bbbf148a1fe6d1faddbc71aba382504f4c369e1deb89f2a180",
+      "reason": "Reviewed synthetic offline test input/fixture. No real school request or deployed credential; live private markers remain unwaivable."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "moonuestc/assisted_auth.py",
+      "match_sha256": "6cbb7b990020562efb4a2408f08aa2d3df984d73c5c8a0d40b2db761a5a1ce67",
+      "reason": "Reviewed public cookie NAME or Authorization scheme prefix; the authenticated value is supplied at runtime, not in source."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "moonuestc/assisted_auth.py",
+      "match_sha256": "56ad904a98b32c86bbb137cbb72fef4db8ba81b6381fa46848d910510d709119",
+      "reason": "Reviewed public cookie NAME or Authorization scheme prefix; the authenticated value is supplied at runtime, not in source."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_assisted_auth.py",
+      "match_sha256": "618d08af62fd104fdb9e4489addaf4ee5bb0232c2be8ee24875a467396fdfe50",
+      "reason": "Reviewed synthetic offline test input/fixture. No real school request or deployed credential; live private markers remain unwaivable."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_assisted_auth.py",
+      "match_sha256": "b7afd8af890c0e23d27cc76c176171bc80b1f828ee294dfcc4b92aa53ae23a0b",
+      "reason": "Reviewed synthetic offline test input/fixture. No real school request or deployed credential; live private markers remain unwaivable."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_assisted_auth.py",
+      "match_sha256": "18702bc66518f267ed08cf5d8d9cf919bf440addfa4d64cd68094a2b16527270",
+      "reason": "Reviewed synthetic offline test input/fixture. No real school request or deployed credential; live private markers remain unwaivable."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_assisted_auth.py",
+      "match_sha256": "44bf0c0e55293dc2fc0446d9353d1ddd732a2371ed044af08db1856ac697f58b",
+      "reason": "Reviewed synthetic offline test input/fixture. No real school request or deployed credential; live private markers remain unwaivable."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_assisted_auth.py",
+      "match_sha256": "181937129446268a8bb56f7b2c6312250e73dc1efb27f5bd4a3d78d2e3f4ee41",
+      "reason": "Reviewed synthetic offline test input/fixture. No real school request or deployed credential; live private markers remain unwaivable."
+    },
+    {
+      "rule": "credential_environment",
+      "path": "tests/test_assisted_auth.py",
+      "match_sha256": "2b0f10567b03de1c31fa513be64c4d901ed2f45480da9e1e6153dc9ff65999cf",
+      "reason": "Reviewed synthetic offline test input/fixture. No real school request or deployed credential; live private markers remain unwaivable."
+    },
+    {
+      "rule": "credential_environment",
+      "path": "tests/test_assisted_auth.py",
+      "match_sha256": "514bd02bf823a356635b8c0871395149c5052d1961e039b3249f41471c7d4198",
+      "reason": "Reviewed synthetic offline test input/fixture. No real school request or deployed credential; live private markers remain unwaivable."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_auth_budget.py",
+      "match_sha256": "b7afd8af890c0e23d27cc76c176171bc80b1f828ee294dfcc4b92aa53ae23a0b",
+      "reason": "Reviewed synthetic offline test input/fixture. No real school request or deployed credential; live private markers remain unwaivable."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_daily_plan.py",
+      "match_sha256": "50f052477a1887b34b22fc5564ff1a92b1b85e2680b88ac1e4566c972a0b57bf",
+      "reason": "Reviewed synthetic offline test input/fixture. No real school request or deployed credential; live private markers remain unwaivable."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_hosting_notice.py",
+      "match_sha256": "b7afd8af890c0e23d27cc76c176171bc80b1f828ee294dfcc4b92aa53ae23a0b",
+      "reason": "Reviewed synthetic offline test input/fixture. No real school request or deployed credential; live private markers remain unwaivable."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_management_routes.py",
+      "match_sha256": "d1bb93d9ffac054939671c3b2938133937ec2d41cb83415e37539854aacdd092",
+      "reason": "Reviewed synthetic offline test input/fixture. No real school request or deployed credential; live private markers remain unwaivable."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_management_routes.py",
+      "match_sha256": "18702bc66518f267ed08cf5d8d9cf919bf440addfa4d64cd68094a2b16527270",
+      "reason": "Reviewed synthetic offline test input/fixture. No real school request or deployed credential; live private markers remain unwaivable."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_management_routes.py",
+      "match_sha256": "45f9041f51775c1cbc8c5cfe5588b92239f119dba6653237613b60bd465c108f",
+      "reason": "Reviewed synthetic offline test input/fixture. No real school request or deployed credential; live private markers remain unwaivable."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_management_routes.py",
+      "match_sha256": "b7afd8af890c0e23d27cc76c176171bc80b1f828ee294dfcc4b92aa53ae23a0b",
+      "reason": "Reviewed synthetic offline test input/fixture. No real school request or deployed credential; live private markers remain unwaivable."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_management_routes.py",
+      "match_sha256": "f5d34e958714cddb12fe4f255f04580b5863bded2296bde773a986e056661db1",
+      "reason": "Reviewed synthetic offline test input/fixture. No real school request or deployed credential; live private markers remain unwaivable."
+    },
+    {
+      "rule": "credential_environment",
+      "path": "tests/test_management_routes.py",
+      "match_sha256": "811980bc7147d2b02f289731c61b937a1c89bdd335e98501012770f9e9906298",
+      "reason": "Reviewed synthetic offline test input/fixture. No real school request or deployed credential; live private markers remain unwaivable."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_portal.py",
+      "match_sha256": "18702bc66518f267ed08cf5d8d9cf919bf440addfa4d64cd68094a2b16527270",
+      "reason": "Reviewed synthetic offline test input/fixture. No real school request or deployed credential; live private markers remain unwaivable."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_portal.py",
+      "match_sha256": "45f9041f51775c1cbc8c5cfe5588b92239f119dba6653237613b60bd465c108f",
+      "reason": "Reviewed synthetic offline test input/fixture. No real school request or deployed credential; live private markers remain unwaivable."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_portal.py",
+      "match_sha256": "181937129446268a8bb56f7b2c6312250e73dc1efb27f5bd4a3d78d2e3f4ee41",
+      "reason": "Reviewed synthetic offline test input/fixture. No real school request or deployed credential; live private markers remain unwaivable."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_portal.py",
+      "match_sha256": "07010d05777efaab70ebd8508bf354674baa9d4482cb25322e7ad96657a3218e",
+      "reason": "Reviewed synthetic offline test input/fixture. No real school request or deployed credential; live private markers remain unwaivable."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_portal.py",
+      "match_sha256": "1f08941a781dae2ba62ff47e8630d07a8c1e36164c6f650081f345a8f34d7e1a",
+      "reason": "Reviewed synthetic offline test input/fixture. No real school request or deployed credential; live private markers remain unwaivable."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_portal.py",
+      "match_sha256": "b7afd8af890c0e23d27cc76c176171bc80b1f828ee294dfcc4b92aa53ae23a0b",
+      "reason": "Reviewed synthetic offline test input/fixture. No real school request or deployed credential; live private markers remain unwaivable."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_portal.py",
+      "match_sha256": "ba57e11ea5ac004dda62dab07abb9c8e3f48df73b78ae17878d6263de971cbda",
+      "reason": "Reviewed synthetic offline test input/fixture. No real school request or deployed credential; live private markers remain unwaivable."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_portal.py",
+      "match_sha256": "0f3ed3125f37febd83505421b85614dd417fc7cf50e42c38077ec2b43966d111",
+      "reason": "Reviewed synthetic offline test input/fixture. No real school request or deployed credential; live private markers remain unwaivable."
+    },
+    {
+      "rule": "credential_environment",
+      "path": "tests/test_portal.py",
+      "match_sha256": "3d76fc3be848d7958e16ac0716de7ec6aa83ad14420fd3850fe9a3173f3eedc9",
+      "reason": "Reviewed synthetic offline test input/fixture. No real school request or deployed credential; live private markers remain unwaivable."
+    },
+    {
+      "rule": "credential_environment",
+      "path": "tests/test_portal.py",
+      "match_sha256": "514bd02bf823a356635b8c0871395149c5052d1961e039b3249f41471c7d4198",
+      "reason": "Reviewed synthetic offline test input/fixture. No real school request or deployed credential; live private markers remain unwaivable."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_private_surfaces.py",
+      "match_sha256": "fa31ace2219ceea9d38b3263ead679cbada33650e0ec77949fa7c6ab44a2471f",
+      "reason": "Reviewed synthetic offline test input/fixture. No real school request or deployed credential; live private markers remain unwaivable."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_private_surfaces.py",
+      "match_sha256": "18702bc66518f267ed08cf5d8d9cf919bf440addfa4d64cd68094a2b16527270",
+      "reason": "Reviewed synthetic offline test input/fixture. No real school request or deployed credential; live private markers remain unwaivable."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_private_surfaces.py",
+      "match_sha256": "b7afd8af890c0e23d27cc76c176171bc80b1f828ee294dfcc4b92aa53ae23a0b",
+      "reason": "Reviewed synthetic offline test input/fixture. No real school request or deployed credential; live private markers remain unwaivable."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_private_surfaces.py",
+      "match_sha256": "f62b721a499c0459965b28d4081ecc641482ad3e119395701fd2f35544974a69",
+      "reason": "Reviewed synthetic offline test input/fixture. No real school request or deployed credential; live private markers remain unwaivable."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_private_surfaces.py",
+      "match_sha256": "b2b0344f1a20745081c8c3d1be3b5e0d7f4c7f714d1bc5ddf3fc7de9eddf1dc1",
+      "reason": "Reviewed synthetic offline test input/fixture. No real school request or deployed credential; live private markers remain unwaivable."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_private_surfaces.py",
+      "match_sha256": "f7d9549370ee77f09a63982c327cc00711e6510d5f6b3bc8cbe28ac04e3348f9",
+      "reason": "Reviewed synthetic offline test input/fixture. No real school request or deployed credential; live private markers remain unwaivable."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_reserved_slots.py",
+      "match_sha256": "b07efcdeb1a82e583eac18fed6aeb1a215b573ecdfa3ac1acbd97cfea34e6e15",
+      "reason": "Reviewed synthetic offline test input/fixture. No real school request or deployed credential; live private markers remain unwaivable."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_reserved_slots.py",
+      "match_sha256": "b8c3bcfbf08d66191a2d0f996f686727ee202e5ff67def3b4969f9b082967f15",
+      "reason": "Reviewed synthetic offline test input/fixture. No real school request or deployed credential; live private markers remain unwaivable."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_schedule_capacity.py",
+      "match_sha256": "18702bc66518f267ed08cf5d8d9cf919bf440addfa4d64cd68094a2b16527270",
+      "reason": "Reviewed synthetic offline test input/fixture. No real school request or deployed credential; live private markers remain unwaivable."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_schedule_capacity.py",
+      "match_sha256": "1dd0ee210491c60ed5c510b39c546481f21bc3d2c05a5f8d8dc556134ea8d7d3",
+      "reason": "Reviewed synthetic offline test input/fixture. No real school request or deployed credential; live private markers remain unwaivable."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_scheduled_retry.py",
+      "match_sha256": "b07efcdeb1a82e583eac18fed6aeb1a215b573ecdfa3ac1acbd97cfea34e6e15",
+      "reason": "Reviewed synthetic offline test input/fixture. No real school request or deployed credential; live private markers remain unwaivable."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_scheduled_retry.py",
+      "match_sha256": "b8c3bcfbf08d66191a2d0f996f686727ee202e5ff67def3b4969f9b082967f15",
+      "reason": "Reviewed synthetic offline test input/fixture. No real school request or deployed credential; live private markers remain unwaivable."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_school_profile.py",
+      "match_sha256": "b7afd8af890c0e23d27cc76c176171bc80b1f828ee294dfcc4b92aa53ae23a0b",
+      "reason": "Reviewed synthetic offline test input/fixture. No real school request or deployed credential; live private markers remain unwaivable."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_student_authorizations.py",
+      "match_sha256": "18702bc66518f267ed08cf5d8d9cf919bf440addfa4d64cd68094a2b16527270",
+      "reason": "Reviewed synthetic offline test input/fixture. No real school request or deployed credential; live private markers remain unwaivable."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_student_authorizations.py",
+      "match_sha256": "44bf0c0e55293dc2fc0446d9353d1ddd732a2371ed044af08db1856ac697f58b",
+      "reason": "Reviewed synthetic offline test input/fixture. No real school request or deployed credential; live private markers remain unwaivable."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_student_names.py",
+      "match_sha256": "27025c3fdb1c2fd8b379af5f7a7d8c4287787d492cdc924fa204d7b2df6759fa",
+      "reason": "Reviewed synthetic offline test input/fixture. No real school request or deployed credential; live private markers remain unwaivable."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_student_scope.py",
+      "match_sha256": "7951492c7f26a98ad5e10ee10af5a6326be4e8a3806e6dd6983981167626e8de",
+      "reason": "Reviewed synthetic offline test input/fixture. No real school request or deployed credential; live private markers remain unwaivable."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_student_scope.py",
+      "match_sha256": "b7afd8af890c0e23d27cc76c176171bc80b1f828ee294dfcc4b92aa53ae23a0b",
+      "reason": "Reviewed synthetic offline test input/fixture. No real school request or deployed credential; live private markers remain unwaivable."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_student_scope.py",
+      "match_sha256": "18702bc66518f267ed08cf5d8d9cf919bf440addfa4d64cd68094a2b16527270",
+      "reason": "Reviewed synthetic offline test input/fixture. No real school request or deployed credential; live private markers remain unwaivable."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_student_scope.py",
+      "match_sha256": "44bf0c0e55293dc2fc0446d9353d1ddd732a2371ed044af08db1856ac697f58b",
+      "reason": "Reviewed synthetic offline test input/fixture. No real school request or deployed credential; live private markers remain unwaivable."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_auth_recovery.py",
+      "match_sha256": "b7afd8af890c0e23d27cc76c176171bc80b1f828ee294dfcc4b92aa53ae23a0b",
+      "reason": "Reviewed fictional student ID in offline authentication-recovery tests; never a real account or network request. Live private markers remain unwaivable."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_auth_recovery.py",
+      "match_sha256": "181937129446268a8bb56f7b2c6312250e73dc1efb27f5bd4a3d78d2e3f4ee41",
+      "reason": "Reviewed fictional student ID in offline authentication-recovery tests; never a real account or network request. Live private markers remain unwaivable."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_daily_reservations.py",
+      "match_sha256": "b07efcdeb1a82e583eac18fed6aeb1a215b573ecdfa3ac1acbd97cfea34e6e15",
+      "reason": "Reviewed offline fixture operator label/password for daily scheduling and migration regression. No real account or network request; live private markers remain unwaivable."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_daily_reservations.py",
+      "match_sha256": "b8c3bcfbf08d66191a2d0f996f686727ee202e5ff67def3b4969f9b082967f15",
+      "reason": "Reviewed offline fixture operator label/password for daily scheduling and migration regression. No real account or network request; live private markers remain unwaivable."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_variation_migration.py",
+      "match_sha256": "b07efcdeb1a82e583eac18fed6aeb1a215b573ecdfa3ac1acbd97cfea34e6e15",
+      "reason": "Reviewed offline fixture operator label/password for daily scheduling and migration regression. No real account or network request; live private markers remain unwaivable."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_variation_migration.py",
+      "match_sha256": "b8c3bcfbf08d66191a2d0f996f686727ee202e5ff67def3b4969f9b082967f15",
+      "reason": "Reviewed offline fixture operator label/password for daily scheduling and migration regression. No real account or network request; live private markers remain unwaivable."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_school_client_requirement.py",
+      "match_sha256": "7f094c202ebc041ffe76ca9a0e99cd062a5611f632e2b0cb454b8da9e6f12bfd",
+      "reason": "Reviewed offline synthetic second-student fixture for school-entry restriction isolation. No real identity, credentials or network request; live private markers remain unwaivable."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "frontend/src/routes.ts",
+      "match_sha256": "152e28fb6bdfc51fa34e06ab71ac2d263d5d15b24f0ffda8c113081fd7650479",
+      "reason": "Reviewed same-origin /app/authorization navigation route; not a credential."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "scripts/tests/test_private_inventory.py",
+      "match_sha256": "a40e35578fafa03d61b84e71d2b4ff80de7798a7e76d1e19f0931b4144b42171",
+      "reason": "Reviewed synthetic canary in the isolated encrypted-inventory regression test; no production values."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "scripts/tests/test_private_inventory.py",
+      "match_sha256": "a4ab70e8dc56bf9178d2b9ee7de92c8e90bdc4a571566ede4d71ea49650b9b84",
+      "reason": "Reviewed synthetic canary in the isolated encrypted-inventory regression test; no production values."
+    },
+    {
+      "rule": "credential_environment",
+      "path": ".env.example",
+      "match_sha256": "db2bde3015b07f0723559fa019c86356d4193966a7b0676f1379cb731a6be6a1",
+      "reason": "Reviewed upstream SECURE_COOKIE HTTPS boolean setting (0/1) in the original public history, not a session Cookie; exact match only, live private markers cannot be waived."
+    },
+    {
+      "rule": "credential_environment",
+      "path": "README.md",
+      "match_sha256": "db2bde3015b07f0723559fa019c86356d4193966a7b0676f1379cb731a6be6a1",
+      "reason": "Reviewed upstream SECURE_COOKIE HTTPS boolean setting (0/1) in the original public history, not a session Cookie; exact match only, live private markers cannot be waived."
+    },
+    {
+      "rule": "credential_environment",
+      "path": "README.md",
+      "match_sha256": "6d92663d2268230433844db636200dfeca4c7c1500bb079071ab9ff1ec9bb887",
+      "reason": "Reviewed upstream SECURE_COOKIE HTTPS boolean setting (0/1) in the original public history, not a session Cookie; exact match only, live private markers cannot be waived."
+    }
+  ],
+  "reviewed_donson_feature_version": "0.5.1+donson.19"
+}

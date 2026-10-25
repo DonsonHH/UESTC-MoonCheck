@@ -1,0 +1,9 @@
+#!/bin/sh
+set -eu
+root="$(git rev-parse --show-toplevel)"
+python="$(git config --get moonuestc.privacyPython || true)"
+if [ -z "$python" ]; then
+  printf '%s\n' 'Privacy gate Python is not configured; publication stopped.' >&2
+  exit 1
+fi
+exec "$python" "$root/scripts/release_guard.py" pre-push "$@"

@@ -1,0 +1,9 @@
+import React,{useEffect,useState} from 'react';
+import {Dialog} from 'radix-ui';
+import {ShieldCheck,X} from 'lucide-react';
+export type HostingNotice={version:string;title:string;announcement:string;sections:{title:string;text:string}[];acceptance:string};
+export function HostingNoticeDialog({notice,open,onClose,onAccept,loginPending,error}:{notice:HostingNotice;open:boolean;onClose:()=>void;onAccept:(version:string)=>void;loginPending:boolean;error?:string}){
+ const[checked,setChecked]=useState(false),[accepting,setAccepting]=useState(false);
+ useEffect(()=>{if(open)setChecked(false)},[open,notice.version]);
+ return <Dialog.Root open={open} onOpenChange={value=>!value&&!accepting&&onClose()}><Dialog.Portal><Dialog.Overlay className="overlay"/><Dialog.Content className="modal hosting-notice" aria-describedby="hosting-notice-summary"><div className="modal-heading"><Dialog.Title><ShieldCheck size={22}/>{notice.title}</Dialog.Title><Dialog.Close className="icon-button" aria-label="暂不继续" disabled={accepting}><X size={20}/></Dialog.Close></div>{error&&<p className="inline-error" role="alert">{error}</p>}<Dialog.Description id="hosting-notice-summary">{notice.announcement}</Dialog.Description><div className="hosting-notice-content">{notice.sections.map(section=><section key={section.title}><h3>{section.title}</h3><p>{section.text}</p></section>)}</div><label className="student-check"><input type="checkbox" checked={checked} onChange={e=>setChecked(e.target.checked)}/><span>{notice.acceptance}</span></label><div className="modal-actions"><button className="button" onClick={onClose} disabled={accepting}>暂不继续</button><button className="button primary" disabled={!checked||accepting} onClick={async()=>{setAccepting(true);try{await onAccept(notice.version)}finally{setAccepting(false)}}}>{loginPending?'同意并继续登录':'确认并关闭'}</button></div><p className="notice-version">告知版本 {notice.version}</p></Dialog.Content></Dialog.Portal></Dialog.Root>;
+}

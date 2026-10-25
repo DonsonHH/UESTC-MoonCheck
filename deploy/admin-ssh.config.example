@@ -1,0 +1,14 @@
+Host moonuestc-admin
+    HostName YOUR_TAILSCALE_IP
+    User YOUR_SSH_USER
+    IdentityFile ~/.ssh/moonuestc_admin_ed25519
+    UserKnownHostsFile ~/.ssh/moonuestc_admin_known_hosts
+    StrictHostKeyChecking yes
+    HostKeyAlgorithms ssh-ed25519
+    IdentitiesOnly yes
+    BatchMode yes
+    ProxyCommand "C:/Program Files/Tailscale/tailscale.exe" nc %h %p
+    ExitOnForwardFailure yes
+    ServerAliveInterval 15
+    ServerAliveCountMax 3
+    ConnectTimeout 15

@@ -1,0 +1,34 @@
+name: Privacy checks
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  application:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - name: Install pinned application dependencies
+        run: |
+          python3 -m venv .venv
+          .venv/bin/python -m pip install --only-binary=:all: -r requirements.txt
+      - name: Application and daily authorization regression tests
+        run: .venv/bin/python -B -m unittest discover -s tests -v
+  privacy:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Synthetic rejection and real Git pre-push tests
+        run: |
+          python3 -m venv .venv
+          .venv/bin/python -m pip install --only-binary=:all: pycryptodome==3.23.0
+          .venv/bin/python -B -m unittest discover -s scripts/tests -v
+      - name: Scan source and all reachable history
+        run: .venv/bin/python -B scripts/release_guard.py check --ci

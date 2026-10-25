@@ -1,66 +1,48 @@
-name: mooncheck
-x-runtime: &runtime
-  image: mooncheck-web:local
-  build: ./app
-  logging:
-    driver: json-file
-    options:
-      max-size: "10m"
-      max-file: "3"
 services:
-  init:
-    <<: *runtime
-    user: "0:0"
-    restart: "no"
-    volumes:
-      - ./data:/app/data
-    entrypoint: ["python", "-c"]
-    command:
-      - |
-        import os
-        from pathlib import Path
-        p = Path('/app/data')
-        p.mkdir(exist_ok=True)
-        os.chown(p, 10001, 10001)
-        os.chmod(p, 0o700)
-        for f in p.iterdir():
-            if f.is_file() and not f.is_symlink():
-                os.chown(f, 10001, 10001)
-                os.chmod(f, 0o600)
-  app:
-    <<: *runtime
+  moonuestc:
+    image: "${MOON_IMAGE:-ghcr.io/horoscope963852/moonuestc:0.5.1}"
+    user: "${PUID:-10001}:${PGID:-10001}"
+    command: ["serve"]
     restart: unless-stopped
     init: true
-    stop_grace_period: 5m
-    depends_on:
-      init:
-        condition: service_completed_successfully
-    environment:
-      MOONCHECK_TRUSTED_HOSTS: "localhost,127.0.0.1,${DOMAIN:-localhost}"
-      MOONCHECK_SECURE_COOKIE: "${SECURE_COOKIE:-0}"
-      MOONCHECK_SETUP_TOKEN: "${SETUP_TOKEN:?请先运行 bash mooncheck.sh start，或按说明填写 .env}"
-    volumes:
-      - ./data:/app/data
-  gateway:
-    image: caddy:2.11.7-alpine
-    restart: unless-stopped
-    depends_on:
-      app:
-        condition: service_healthy
-    environment:
-      SITE_ADDRESS: "${SITE_ADDRESS:-http://localhost}"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
     ports:
-      - "${BIND_IP:-127.0.0.1}:${HTTP_PORT:-8080}:80"
-      - "${BIND_IP:-127.0.0.1}:${HTTPS_PORT:-8443}:443"
+      - "${MOON_BIND_ADDRESS:-127.0.0.1}:${MOON_PORT:-8088}:8080"
+    environment:
+      TZ: Asia/Shanghai
+      MOON_CONFIG: /config/config.json
+      MOON_DATA: /data
+      MOON_PUBLIC_URL: "${MOON_PUBLIC_URL:?Set MOON_PUBLIC_URL in .env}"
+      MOON_ALLOW_INSECURE_HTTP: "${MOON_ALLOW_INSECURE_HTTP:-0}"
+      MOON_ALLOW_REGISTRATION: "${MOON_ALLOW_REGISTRATION:-1}"
+      MOON_ENABLE_PORTAL: "${MOON_ENABLE_PORTAL:-0}"
+      MOON_ENABLE_WECHAT_AUTH: "${MOON_ENABLE_WECHAT_AUTH:-0}"
+      MOON_SURFACE: "${MOON_SURFACE:-}"
+      MOON_REQUIRE_CONSENT: "${MOON_REQUIRE_CONSENT:-1}"
+      MOON_STUDENT_ID_PREFIX: "${MOON_STUDENT_ID_PREFIX:-}"
+      MOON_ALLOWED_PRESETS: "${MOON_ALLOWED_PRESETS:-}"
+      MOON_RUN_WINDOW: "${MOON_RUN_WINDOW:-21:06,23:24}"
+      MOON_TRUSTED_PROXY_CIDRS: "${MOON_TRUSTED_PROXY_CIDRS:-}"
+      MOON_BROWSER_ASSIST_URL: "${MOON_BROWSER_ASSIST_URL:-}"
+      MOON_BROWSER_ASSIST_KEY: "${MOON_BROWSER_ASSIST_KEY:-}"
     volumes:
-      - ./gateway/Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
+      - type: bind
+        source: "${MOON_DATA_DIR:-./data}"
+        target: /data
+    tmpfs: ["/tmp:size=32m,mode=1777"]
+    mem_limit: 512m
+    pids_limit: 64
+    stop_grace_period: 45s
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/healthz', timeout=3).close()"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
     logging:
       driver: json-file
       options:
-        max-size: "10m"
+        max-size: 5m
         max-file: "3"
-volumes:
-  caddy_data:
-  caddy_config:

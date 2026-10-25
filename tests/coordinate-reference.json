@@ -1,0 +1,146 @@
+{
+  "reference": "wandergis/coordtransform JavaScript forward transform",
+  "reference_sha256": "e941a1a5825c1a615eb3e986a0bfa95b5cba03f6aa89fb20cf3be33259fb897c",
+  "samples": [
+    {
+      "wgs84": {
+        "longitude": 103.930739,
+        "latitude": 30.757413
+      },
+      "gcj02_approx": {
+        "longitude": 103.93284383329953,
+        "latitude": 30.75470828983461
+      }
+    },
+    {
+      "wgs84": {
+        "longitude": 116.404,
+        "latitude": 39.915
+      },
+      "gcj02_approx": {
+        "longitude": 116.41024449916938,
+        "latitude": 39.91640428150164
+      }
+    },
+    {
+      "wgs84": {
+        "longitude": 121.4737,
+        "latitude": 31.2304
+      },
+      "gcj02_approx": {
+        "longitude": 121.47822305927693,
+        "latitude": 31.22845773757727
+      }
+    },
+    {
+      "wgs84": {
+        "longitude": 114.0579,
+        "latitude": 22.5431
+      },
+      "gcj02_approx": {
+        "longitude": 114.06301399856547,
+        "latitude": 22.54038281422246
+      }
+    },
+    {
+      "wgs84": {
+        "longitude": 104.0665,
+        "latitude": 30.5723
+      },
+      "gcj02_approx": {
+        "longitude": 104.06900490567072,
+        "latitude": 30.569845540719605
+      }
+    },
+    {
+      "wgs84": {
+        "longitude": 87.6168,
+        "latitude": 43.8256
+      },
+      "gcj02_approx": {
+        "longitude": 87.61964994946926,
+        "latitude": 43.82680539311119
+      }
+    },
+    {
+      "wgs84": {
+        "longitude": 110.35,
+        "latitude": 20.02
+      },
+      "gcj02_approx": {
+        "longitude": 110.35441101881037,
+        "latitude": 20.017997369021984
+      }
+    },
+    {
+      "wgs84": {
+        "longitude": 134,
+        "latitude": 50
+      },
+      "gcj02_approx": {
+        "longitude": 134.0081111233069,
+        "latitude": 50.00207213568842
+      }
+    },
+    {
+      "wgs84": {
+        "longitude": 73.66,
+        "latitude": 30
+      },
+      "gcj02_approx": {
+        "longitude": 73.66,
+        "latitude": 30
+      }
+    },
+    {
+      "wgs84": {
+        "longitude": 135.05,
+        "latitude": 30
+      },
+      "gcj02_approx": {
+        "longitude": 135.05,
+        "latitude": 30
+      }
+    },
+    {
+      "wgs84": {
+        "longitude": 110,
+        "latitude": 3.86
+      },
+      "gcj02_approx": {
+        "longitude": 110,
+        "latitude": 3.86
+      }
+    },
+    {
+      "wgs84": {
+        "longitude": 110,
+        "latitude": 53.55
+      },
+      "gcj02_approx": {
+        "longitude": 110,
+        "latitude": 53.55
+      }
+    },
+    {
+      "wgs84": {
+        "longitude": -74.006,
+        "latitude": 40.7128
+      },
+      "gcj02_approx": {
+        "longitude": -74.006,
+        "latitude": 40.7128
+      }
+    },
+    {
+      "wgs84": {
+        "longitude": 0,
+        "latitude": 0
+      },
+      "gcj02_approx": {
+        "longitude": 0,
+        "latitude": 0
+      }
+    }
+  ]
+}
