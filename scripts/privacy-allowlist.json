@@ -1778,7 +1778,13 @@
       "path": "tests/test_qq_api.py",
       "match_sha256": "b5913a65c65f72aebcac448dd123cfe430476b5ea65df89b695fe5f788493810",
       "reason": "Reviewed synthetic offline QQ access-token fixture; never a deployed token."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_qq_api.py",
+      "match_sha256": "b4b8654f84be8eaf1f7a2c009f445ade548fa09cdc477794ba8ba0079fed1a07",
+      "reason": "Reviewed synthetic student identifier in offline Markdown injection and group-summary tests."
     }
   ],
-  "reviewed_donson_feature_version": "0.5.1+donson.28"
+  "reviewed_donson_feature_version": "0.5.1+donson.29"
 }

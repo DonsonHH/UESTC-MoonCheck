@@ -19,7 +19,7 @@ class SupportManager:
     def __init__(self,store,*,session_factory=school_session,qq_factory=QQClient,clock=now,background=True):
         self.store=store;self.data=SupportStore(store);self.session_factory=session_factory;self.qq_factory=qq_factory;self.clock=clock
         self.background=background;self.pool=ThreadPoolExecutor(max_workers=1,thread_name_prefix='moon-support') if background else None
-        self.lock=threading.RLock();self.pending=set();self.client=None;self.client_key=None;self.next_poll=0;self.closed=False
+        self.lock=threading.RLock();self.pending=set();self.client=None;self.client_key=None;self.next_poll=0;self.next_prune=0;self.closed=False
     def session(self,account_id):return self.session_factory(self.store,account_id,clock=self.clock)
     def client_for_bot(self):
         config=self.data.get('qq_bot')
@@ -34,7 +34,7 @@ class SupportManager:
         value=self.data.get('qq_bot')
         return {'configured':bool(value.get('app_id') and value.get('app_secret')),'enabled':bool(value.get('enabled')),
             'callback_url':origin+'/api/qq/callback/'+value['callback_key'] if value.get('callback_key') else '',
-            'last_verified_at':value.get('verified_at'),'last_callback':value.get('last_callback'),'contacts':self.data.contacts()}
+            'last_verified_at':value.get('verified_at'),'last_callback':value.get('last_callback')}
     def configure_bot(self,data):
         if not isinstance(data,dict) or set(data)-{'app_id','app_secret','enabled'}:raise WebError(400,'invalid_fields','机器人参数不正确。')
         value=self.data.get('qq_bot');value.update(data)
@@ -57,7 +57,8 @@ class SupportManager:
             roster=school.roster(key,self.clock().date().isoformat()) if key else []
         return {'classes':classes,'students':[{k:r[k] for k in ('student_id','name','status')} for r in roster],
             'business_date':self.clock().date().isoformat(),'pending_count':sum(r['status'] in PENDING for r in roster),
-            'settings':config,'configuration_revision':self.class_revision(config),'runs':self.data.runs(account_id),'remark_preview':daily_remark(self.clock().date().isoformat())}
+            'settings':config,'configuration_revision':self.class_revision(config),'test_group_bound':bool(self.data.get('qq_test_destination').get('group_openid')),
+            'runs':self.data.runs(account_id),'remark_preview':daily_remark(self.clock().date().isoformat())}
     def class_revision(self,value):return self.store.vault.digest('class_settings',json.dumps(value,sort_keys=True,separators=(',',':')))
     def configure_class(self,actor,account_id,data):
         if actor['role']!='admin':raise WebError(403,'admin_required','班级自动填报由管理员配置。')
@@ -135,16 +136,10 @@ class SupportManager:
                 if content in ('身份','我的身份'):
                     self.data.contact(context)
                     reply=('本群标识：'+context['target']+'\n你的群成员标识：'+context['sender']) if context['kind']=='group' else '你的私聊标识：'+context['sender']
-                elif content in ('成员身份','取成员身份') and context['kind']=='group':
-                    members=context.get('mentioned_members',[])
-                    if len(members)==1:
-                        self.data.contact({**context,'sender':members[0]})
-                        reply='被 @ 同学在本群的成员标识：'+members[0]+'\n管理员核对后可在网页对应学号中录入；同学本人无需操作。'
-                    else:reply='请同时 @机器人与一位目标同学，再发送“成员身份”。每次只选择一位，避免映射混淆。'
                 elif re.fullmatch(r'(?:绑定|绑定班级|绑定测试群)\s+[A-Fa-f0-9]{16}',content):
                     success=self.data.bind_code(content.split()[-1],context)
                     if success:self.data.contact(context)
-                    reply=('测试群已连接，不会接收正式班级状态。' if success=='group_test' else '班级群已绑定；请在管理端完善学号与群成员映射。' if context['kind']=='group' else 'QQ 已绑定；请返回网页，自行开启每日提醒。') if success else '绑定码无效、过期或场景不匹配，请重新生成。'
+                    reply=('测试群已连接，不会接收正式班级状态。' if success=='group_test' else '正式班级群已绑定；每日提醒使用 @全体与未签到名单，请确保机器人有管理员权限。' if context['kind']=='group' else 'QQ 已绑定；请返回网页，自行开启每日提醒。') if success else '绑定码无效、过期或场景不匹配，请重新生成。'
                 elif content in ('取消提醒','停止提醒') and context['kind']=='user':
                     for uid,value in self.data.reminders():
                         if value.get('openid')==context['sender']:
@@ -212,8 +207,9 @@ class SupportManager:
                 self.data.finish(ident,{'result':'class_read_failed','reason':'reminder_window_expired'},'failed');return
             latest=self.data.cadre(account_id)
             state='disabled'
-            if self.data.get('qq_bot').get('enabled') and latest.get('group_reminders') and latest.get('group_openid') and latest.get('group_openid')==config.get('group_openid') and latest.get('class_key')==config['class_key']:
-                state=self.send_once(account_id,'group_reminder',day,config['group_openid'],group_message(day,pending,latest.get('members',{})),account_id)
+            test_group=self.data.get('qq_test_destination').get('group_openid')
+            if self.data.get('qq_bot').get('enabled') and latest.get('group_reminders') and latest.get('group_openid') and latest.get('group_openid')!=test_group and latest.get('group_openid')==config.get('group_openid') and latest.get('class_key')==config['class_key']:
+                state=self.send_once(account_id,'group_reminder',day,config['group_openid'],group_message(day,pending),account_id)
             self.data.finish(ident,{'result':'class_checked','total':len(rows),'pending':len(pending),'delivery':state})
         except ToolError as error:
             self.data.finish(ident,{'result':'class_read_failed','reason':error.reason},'failed')
@@ -243,6 +239,8 @@ class SupportManager:
     def tick(self):
         if self.closed or time.monotonic()<self.next_poll:return
         self.next_poll=time.monotonic()+20;instant=self.clock();day=instant.date().isoformat();clock=instant.strftime('%H:%M')
+        if time.monotonic()>=self.next_prune:
+            self.data.prune();self.next_prune=time.monotonic()+60
         for row,config in self.data.cadres():
             if not row['enabled'] or not row['active']:continue
             if self.store.require_notice and not self.store.notice_accepted({'id':row['owner_id'],'role':row['role']}):continue

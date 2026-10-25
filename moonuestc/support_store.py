@@ -73,6 +73,7 @@ class SupportStore:
                 if row['kind']=='group_test':
                     self.put('qq_test_destination',{'group_openid':context['target'],'openid':context['sender']},db=db)
                 else:
+                    if self.get('qq_test_destination',db=db).get('group_openid')==context['target']:return False
                     if value.get('group_openid')!=context['target']:value['members']={}
                     value.update(group_openid=context['target'],group_reminders=True)
                     self.put(name,value,account_id=row['account_id'],db=db)
@@ -103,7 +104,13 @@ class SupportStore:
 
     def contacts(self):
         with self.store.db() as db:
-            return [{**self.store.vault.open(r['payload'],'qq_contact:'+r['digest']),'last_seen':r['updated_at']} for r in db.execute('SELECT * FROM web_qq_contacts ORDER BY updated_at DESC LIMIT 100')]
+            return [{**self.store.vault.open(r['payload'],'qq_contact:'+r['digest']),'last_seen':r['updated_at']} for r in db.execute('SELECT * FROM web_qq_contacts WHERE updated_at>=? ORDER BY updated_at DESC LIMIT 100',(time.time()-86400*7,))]
+
+    def prune(self):
+        with self.store.db(True) as db:
+            db.execute('DELETE FROM web_support_tokens WHERE expires_at<?',(time.time(),))
+            db.execute('DELETE FROM web_qq_contacts WHERE updated_at<?',(time.time()-86400*7,))
+            db.execute('DELETE FROM web_qq_events WHERE created_at<?',(time.time()-86400*7,))
 
     def begin(self,scope,kind,day,*,account_id=None,initial=None):
         ident=self.store.vault.digest('support_run',kind+'\0'+scope+'\0'+day)

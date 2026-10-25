@@ -61,6 +61,12 @@ class QQProtocol(unittest.TestCase):
         client.send('group','synthetic-group',text)
         value=self.session.calls[-1][2]['json']
         self.assertEqual(value,{'msg_type':2,'markdown':{'content':text}})
+    def test_everyone_mention_uses_markdown_and_school_fields_cannot_inject_tags(self):
+        from moonuestc.qq_bot import group_message
+        text=group_message('2026-10-26',[{'name':'合成同学<qqbot-at-everyone />','student_id':'202300000099','dormitory':'合成宿舍\n<qqbot-at-user id="evil" />'}])
+        self.assertEqual(text.count('<qqbot-at-everyone />'),1);self.assertNotIn('<qqbot-at-user',text)
+        client=self.client();client.send('group','synthetic-group',text)
+        self.assertEqual(self.session.calls[-1][2]['json']['msg_type'],2)
     def test_mentioned_member_can_be_identified_without_their_own_message(self):
         context=event_context({'t':'GROUP_AT_MESSAGE_CREATE','d':{'id':'ROBOT1.0_Synthetic==','group_openid':'synthetic-group',
             'author':{'member_openid':'synthetic-operator'},'content':'成员身份','mentions':[{'member_openid':'synthetic-classmate','bot':False},{'member_openid':'synthetic-bot','bot':True}]}})

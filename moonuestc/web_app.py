@@ -193,7 +193,8 @@ def create_app(directory,public_url,*,allow_http=False,start_worker=False,runner
     from .qq_bot import QQError
     @app.errorhandler(QQError)
     def qq_error(error):
-        return jsonify({'ok':False,'error':{'code':'qq_delivery_failed','message':'QQ 未确认本次操作，请检查机器人与群的主动消息权限。','platform_code':error.code}}),502
+        messages={40034143:'QQ 要求机器人拥有群管理员身份，才能 @全体成员。',40034105:'请群主开启机器人的主动发言权限。'}
+        return jsonify({'ok':False,'error':{'code':'qq_delivery_failed','message':messages.get(error.code,'QQ 未确认本次操作，请检查机器人与群的消息权限。'),'platform_code':error.code}}),502
 
     @app.errorhandler(ToolError)
     def tool_error(error):
@@ -269,10 +270,12 @@ def create_app(directory,public_url,*,allow_http=False,start_worker=False,runner
     @protected(admin=True)
     def class_test_message(account_id):
         support.data.owner(g.moon_user,account_id)
-        if body()!={'confirm':True}:raise WebError(400,'confirmation_required','请确认发送测试消息。')
+        value=body()
+        if value.get('confirm') is not True or set(value)-{'confirm','test'} or type(value.get('test',False)) is not bool:raise WebError(400,'confirmation_required','请确认发送测试消息。')
         config=support.data.cadre(account_id)
-        if not config.get('group_openid'):raise WebError(409,'group_not_bound','请先绑定班级群。')
-        support.client_for_bot().send('group',config['group_openid'],'晚安成电：班级签到提醒连接测试，正式检查时间为每日 23:10。')
+        target=(support.data.get('qq_test_destination') if value.get('test') else config).get('group_openid')
+        if not target:raise WebError(409,'group_not_bound','请先绑定所选群。')
+        support.client_for_bot().send('group',target,'<qqbot-at-everyone /> 晚安成电连接测试：验证 @全体与主动发送权限，不包含真实班级签到名单。')
         return response_ok({'sent':True})
 
     @app.get('/api/notice')

@@ -63,7 +63,7 @@ class QQClient:
         identifier(target)
         if not isinstance(text,str) or not 1<=len(text)<=5000:raise QQError('qq_message_size')
         value={'msg_type':0,'content':text}
-        if kind=='group' and '<qqbot-at-user ' in text:
+        if kind=='group' and ('<qqbot-at-user ' in text or '<qqbot-at-everyone />' in text):
             # QQ renders member interactions in Markdown; text payloads display
             # the literal tag even when the API accepts the message.
             value={'msg_type':2,'markdown':{'content':text}}
@@ -126,8 +126,11 @@ def event_context(event):
     except (QQError,AttributeError):return None
 
 
-def group_message(day,pending,mapping):
-    mapped=[mapping[r['student_id']] for r in pending if r['student_id'] in mapping]
+def group_message(day,pending,mapping=None):
     if not pending:return f'晚安成电 · {day} 23:10 检查：本班没有待签到记录。'
-    mentions=' '.join('<qqbot-at-user id="'+identifier(member)+'" />' for member in mapped)
-    return f'晚安成电 · {day} 23:10\n本班还有 {len(pending)} 人未签到，请在学校截止前处理。\n'+mentions+f'\n已绑定并提醒 {len(mapped)} 人，另有 {len(pending)-len(mapped)} 人尚未绑定 QQ。'
+    def field(value,limit):
+        # School fields cannot inject mentions, Markdown links or extra lines.
+        text=str(value or '')[:limit]
+        return ''.join(c for c in text if c.isalnum() or c in ' ·.-/()').strip() or '校方未提供'
+    rows=[f"{i}. {field(row['name'],40)}｜学号：{field(row['student_id'],24)}｜宿舍：{field(row.get('dormitory'),160)}" for i,row in enumerate(pending,1)]
+    return '<qqbot-at-everyone />\n'+f'晚安成电 · {day} 23:10\n截至本次检查，还有 {len(pending)} 位同学未签到：\n'+'\n'.join(rows)+'\n请在学校截止时间前完成签到；已处理的同学请以学校最新记录为准。'

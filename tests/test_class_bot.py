@@ -135,14 +135,15 @@ class ClassBot(fixtures.WebCase):
     def test_permission_loss_never_attempts_report(self):
         self.parent_job();self.school.permissions=False;self.support.report_class(self.aid,DAY)
         self.assertEqual(self.school.posts,[])
-    def test_group_check_runs_at_2310_and_mentions_only_pending_mapped_students(self):
+    def test_group_check_at_2310_mentions_everyone_and_lists_only_pending_students(self):
         self.instant=self.instant.replace(hour=23,minute=9);self.support.tick();self.assertEqual(self.qq.messages,[])
         self.instant=self.instant.replace(minute=10);self.support.next_poll=0;self.support.tick()
         self.support.next_poll=0;self.support.tick()
         self.assertEqual(len(self.qq.messages),1)
         kind,target,text,_=self.qq.messages[0];self.assertEqual((kind,target),('group','synthetic-group'))
-        self.assertIn('2 人',text);self.assertIn('<qqbot-at-user id="synthetic-member-99" />',text)
-        self.assertNotIn('合成同学丁',text);self.assertNotIn(TARGET,text)
+        self.assertIn('2 位',text);self.assertIn('<qqbot-at-everyone />',text)
+        self.assertNotIn('合成同学丁',text);self.assertIn(TARGET,text);self.assertIn('合成同学乙',text)
+        self.assertIn('synthetic-private-room',text);self.assertNotIn('synthetic-private-phone',text)
         self.assertEqual(self.sessions,1)
     def test_failed_qq_delivery_cannot_spam_or_revert_school_results(self):
         self.qq.fail=True;self.instant=self.instant.replace(hour=23,minute=10)
@@ -259,14 +260,36 @@ class ClassBot(fixtures.WebCase):
         code=self.support.data.new_code('group',account_id=self.aid);event=self.event('绑定班级 '+code,group=True)
         event['d']['group_openid']='synthetic-new-formal-group';self.callback(event)
         self.assertEqual(self.support.data.cadre(self.aid)['members'],{})
-    def test_operator_can_obtain_mentioned_member_id_without_self_binding(self):
+    def test_cancelled_member_mapping_flow_no_longer_collects_target_identity(self):
         event=self.event('成员身份',group=True);event['d']['mentions']=[{'member_openid':'synthetic-classmate','bot':False}]
         self.callback(event)
-        self.assertIn('synthetic-classmate',self.qq.messages[0][2]);self.assertEqual(self.support.data.cadre(self.aid)['members'],self.config['members'])
-        self.assertEqual(self.support.data.contacts()[0]['sender'],'synthetic-classmate')
+        self.assertEqual(self.qq.messages,[]);self.assertEqual(self.support.data.contacts(),[])
     def test_unbound_formal_group_still_retains_daily_count_without_sending_to_test(self):
         self.support.data.put('cadre:'+self.aid,{**self.config,'group_openid':'','group_reminders':False},account_id=self.aid)
         self.support.data.put('qq_test_destination',{'group_openid':'synthetic-test-group','openid':'synthetic-operator'})
         self.instant=self.instant.replace(hour=23,minute=10);self.support.next_poll=0;self.support.tick()
         self.assertEqual(self.qq.messages,[])
         runs=self.support.data.runs(self.aid);self.assertEqual(runs[0]['result']['pending'],2);self.assertEqual(runs[0]['result']['delivery'],'disabled')
+    def test_expired_identity_metadata_is_pruned_without_new_messages(self):
+        self.support.data.contact({'kind':'group','target':'synthetic-group','sender':'synthetic-member'})
+        self.support.data.once_event('synthetic-expired-event')
+        self.support.data.new_code('group',account_id=self.aid)
+        with self.store.db(True) as db:
+            db.execute('UPDATE web_qq_contacts SET updated_at=?',(time.time()-8*86400,))
+            db.execute('UPDATE web_qq_events SET created_at=?',(time.time()-8*86400,))
+            db.execute('UPDATE web_support_tokens SET expires_at=0')
+        self.assertEqual(self.support.data.contacts(),[])
+        self.support.next_poll=0;self.support.tick()
+        with self.store.db() as db:
+            for table in ('web_qq_contacts','web_qq_events','web_support_tokens'):
+                self.assertEqual(db.execute('SELECT count(*) FROM '+table).fetchone()[0],0)
+    def test_marked_test_group_cannot_be_activated_as_formal(self):
+        self.support.data.put('qq_test_destination',{'group_openid':'synthetic-group','openid':'synthetic-operator'})
+        self.support.data.put('cadre:'+self.aid,{**self.config,'group_openid':'','group_reminders':False},account_id=self.aid)
+        code=self.support.data.new_code('group',account_id=self.aid);self.callback(self.event('绑定班级 '+code,group=True))
+        self.assertFalse(self.support.data.cadre(self.aid).get('group_openid'))
+    def test_misconfigured_test_destination_never_receives_class_details(self):
+        self.support.data.put('qq_test_destination',{'group_openid':'synthetic-group','openid':'synthetic-operator'})
+        self.instant=self.instant.replace(hour=23,minute=10);self.support.remind_class(self.aid,DAY)
+        self.assertEqual(self.qq.messages,[])
+        self.assertEqual(self.support.data.runs(self.aid)[0]['result']['pending'],2)

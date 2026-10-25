@@ -39,7 +39,9 @@ class CadreSchool:
                     raise ToolError('class_contract_changed','class_roster')
                 if r['studentSn'] in seen:raise ToolError('class_pagination_changed','class_roster')
                 seen.add(r['studentSn'])
-                rows.append({'student_id':r['studentSn'],'name':r['studentName'],'record_id':r['id'],'status':r['recordStatusCode']})
+                dorm=r.get('dormitoryLocation')
+                rows.append({'student_id':r['studentSn'],'name':r['studentName'],'record_id':r['id'],'status':r['recordStatusCode'],
+                    'dormitory':dorm if isinstance(dorm,str) and len(dorm)<=160 else ''})
             if len(data)<100:return rows
         raise ToolError('class_roster_limit','class_roster')
     def study_option(self):
