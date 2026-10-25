@@ -4,12 +4,13 @@ import secrets
 import re
 import time
 from html.parser import HTMLParser
-from urllib.parse import urljoin, urlsplit
+from urllib.parse import urljoin, urlsplit, parse_qs
 import requests
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.padding import PKCS7
 from storage import now
 from diagnostics import safe_text, STAGES
+from cas_diagnostics import endpoint, response_hints
 
 BASE = 'https://jzsz.uestc.edu.cn'
 CAS = 'https://idas.uestc.edu.cn/authserver'
@@ -72,6 +73,7 @@ class Portal:
             self.s.cookies.set('MULTIFACTOR_BROWSER_FINGERPRINT', account['fingerprint'], domain='idas.uestc.edu.cn', path='/', secure=True)
 
     def request(self, method, url, follow=False, **kw):
+        self.last_hops=[]
         for _ in range(10):
             u = urlsplit(url)
             if u.scheme != 'https' or u.hostname not in ('jzsz.uestc.edu.cn', 'idas.uestc.edu.cn'):
@@ -86,6 +88,7 @@ class Portal:
                 raise PortalError('无法连接学校平台，请检查网络或 DNS。') from None
             except requests.RequestException:
                 raise PortalError('学校平台网络请求失败。') from None
+            self.last_hops.append((r.status_code,endpoint(url,self.a)))
             if follow and r.is_redirect:
                 url = urljoin(url, r.headers['Location'])
                 method, kw = 'GET', {}
@@ -95,33 +98,52 @@ class Portal:
 
     def authorized(self):
         r = self.request('GET', BASE + '/daily-checkin/checkLogin?appId=294', follow=True)
+        self.last_authorization_response=r
         return r.status_code == 200 and urlsplit(r.url).path.startswith('/daily-checkin-h5/')
+
+    def login_error(self,r,reason,stage,kind='need_auth'):
+        hint,title,code=response_hints(r,self.a,self.cookies())
+        details=[reason]
+        if hint:details.append('学校提示：'+hint)
+        elif title:details.append('页面标题：'+title)
+        destination=r.headers.get('Location')
+        if destination:details.append('跳转：'+endpoint(urljoin(LOGIN,destination),self.a))
+        hops=getattr(self,'last_hops',[])
+        if hops:details.append('请求链路：'+' → '.join(str(status)+' '+path for status,path in hops[-4:]))
+        return PortalError('；'.join(details),kind,stage,code,r.status_code)
 
     def warmup(self):
         r = self.request('GET', BASE + '/api/isLoginFailure', params={'_t': int(time.time()*1000)}, headers={'Referer': BASE+'/', 'X-Requested-With': 'XMLHttpRequest'})
         if r.status_code != 200:
-            raise PortalError('门户预热失败，请稍后重试')
+            raise self.login_error(r,'学校门户预热请求未通过','接入学校门户','failed')
 
     def login(self):
         if not self.a.get('password'):
             raise PortalError('请填写学校密码。', 'need_auth')
-        r = self.request('GET', LOGIN, follow=True)
+        try:r = self.request('GET', LOGIN, follow=True)
+        except PortalError as exc:raise exc.contextualize('读取统一身份认证页面') from None
+        if r.status_code!=200:
+            raise self.login_error(r,'认证页面请求未成功','读取统一身份认证页面','failed')
         fields = Inputs(r.text).values
         salt, execution = fields.get('pwdEncryptSalt'), fields.get('execution')
         if not salt:
             m = re.search(r'''pwdEncryptSalt["']?\s*[:=]\s*["']([^"']+)''', r.text)
             salt = m.group(1) if m else None
         if not salt or not execution:
-            raise PortalError('暂时无法登录，请检查账号信息。', 'need_auth')
-        r = self.request('POST', LOGIN, data={'username': self.a['student_id'], 'password': encrypt_password(self.a['password'], salt), 'captcha': '', '_eventId': 'submit', 'cllt': 'userNameLogin', 'dllt': 'generalLogin', 'lt': '', 'execution': execution}, headers={'Origin': 'https://idas.uestc.edu.cn', 'Referer': LOGIN})
+            missing='、'.join(key for key,value in (('密码加密参数',salt),('登录流程参数',execution)) if not value)
+            raise self.login_error(r,'认证页面缺少'+missing+'，尚未提交密码','读取统一身份认证页面','failed')
+        try:
+            r = self.request('POST', LOGIN, data={'username': self.a['student_id'], 'password': encrypt_password(self.a['password'], salt), 'captcha': '', '_eventId': 'submit', 'cllt': 'userNameLogin', 'dllt': 'generalLogin', 'lt': '', 'execution': execution}, headers={'Origin': 'https://idas.uestc.edu.cn', 'Referer': LOGIN})
+        except PortalError as exc:raise exc.contextualize('提交统一身份认证') from None
         dest = urljoin(LOGIN, r.headers.get('Location', ''))
-        if r.is_redirect and 'ticket=' in dest:
+        if r.is_redirect and parse_qs(urlsplit(dest).query).get('ticket'):
             self.request('GET', dest, follow=True)
         else:
-            raise PortalError('登录失败，请检查学校密码。', 'need_auth')
+            kind='need_auth' if r.status_code<500 and r.status_code!=429 else 'failed'
+            raise self.login_error(r,'认证未返回登录票据','提交统一身份认证',kind)
         self.warmup()
         if not self.authorized():
-            raise PortalError('暂时无法打开打卡页面，请稍后再试。', 'need_auth')
+            raise self.login_error(self.last_authorization_response,'认证票据已返回，但未进入打卡页面','建立学校业务会话')
 
     def ensure(self):
         if self.a.get('cookies'):
