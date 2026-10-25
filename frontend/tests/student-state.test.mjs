@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {studentState} from '../src/student-state.ts';
+import {studentState,submissionIntent} from '../src/student-state.ts';
 const account={enabled:true,automatic:true,location:{preset:'synthetic'},location_open:true,ready_for_automation:true,confirmed_today:false,recorded_today:false,planned_run_at:'22:02:13',schedule_slot:{start:'22:02'}};
 test('healthy daily plans wait calmly before school opens and never request a daily check',()=>{
  for(const time of ['00:01','12:00','21:00','21:30']){const s=studentState(account,time);assert.equal(s.key,'scheduled');assert.equal(s.action,'settings');assert(!s.title.includes('未确认'));assert(!s.label.includes('检查'))}
@@ -35,4 +35,16 @@ test('a verified native grant permits the saved daily plan while preserving the 
  assert.equal(studentState(native,'12:00').key,'scheduled');
  assert.equal(studentState({...native,automatic:false,ready_for_automation:false},'21:07').key,'first-sign');
  assert.equal(studentState({...account,school_checkin_required:true},'12:00').label,'同步今日学校记录');
+});
+
+test('current-day confirmation is independent of an older failed record or a newly linked grant',()=>{
+ const a={...account,wechat_auth_enabled:true,school_checkin_required:false,last_result:{result:'submission_rejected',reason:'school_client_required'}};
+ assert.equal(submissionIntent(a),'submit');
+ assert.equal(submissionIntent({...a,today_job:{state:'failed',source:'schedule',result:{result:'submission_unknown'}}}),'recheck');
+ assert.equal(submissionIntent({...a,recorded_today:true}),'recheck');
+ assert.equal(submissionIntent({...a,wechat_auth_enabled:false}),'sync');
+});
+test('a native account with two expired connections recovers school identity first',()=>{
+ const s=studentState({...account,wechat_auth_enabled:true,school_checkin_required:true,school_auth_required:true},'21:10');
+ assert.equal(s.action,'reauthenticate');
 });

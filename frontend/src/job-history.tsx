@@ -21,7 +21,7 @@ export function JobHistory<T extends RecordRow>({request,renderJobs,revision}:{r
   catch(e){if(mounted.current)setError((e as Error).message)}
   finally{pending.current=false;if(mounted.current)setBusy(false)}
  }
- return <section className="panel history-panel"><div className="panel-title"><div><h2>{expanded?'运行记录':'近三天的记录'}</h2><p className="history-caption">{expanded?'已展开较早记录':'今天及前两天'} · 北京时间</p></div>{expanded&&<button className="text-link" disabled={busy} onClick={()=>{expandedRef.current=false;setExpanded(false);setRefresh(n=>n+1)}}>收起较早记录</button>}</div>
+ return <section className="panel history-panel"><div className="panel-title"><h2>{expanded?'全部已加载记录':'最近三天'}</h2>{expanded&&<button className="text-link" disabled={busy} onClick={()=>{expandedRef.current=false;setExpanded(false);setRefresh(n=>n+1)}}>只看最近三天</button>}</div>
  {error&&<div role="alert" className="inline-error history-error">{error}<button className="text-link" disabled={busy} onClick={()=>cursor?void more():setRefresh(n=>n+1)}><RefreshCw size={15}/>重试</button></div>}
  {!loaded&&!error?<div className="loading" role="status"><LoaderCircle className="spin" size={19}/>正在读取记录…</div>:rows.length?renderJobs(rows):loaded?<div className="empty history-empty"><h3>近三天没有运行记录</h3><p>{cursor?'可以继续查看更早的记录。':'执行检查或签到后，结果会出现在这里。'}</p></div>:null}
  {loaded&&(cursor||expanded)&&<div className="history-more">{cursor?<button className="button" onClick={more} disabled={busy}>{busy?<LoaderCircle className="spin" size={17}/>:<ChevronDown size={17}/>} {busy?'正在加载…':'加载更多记录'}</button>:<p role="status">已显示全部记录</p>}</div>}

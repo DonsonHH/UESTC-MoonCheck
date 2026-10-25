@@ -1,0 +1,52 @@
+import React,{useEffect,useState} from 'react';
+import {Switch} from 'radix-ui';
+import {ArrowRight,Check,ChevronDown,Clock3,MapPin,ShieldCheck,LoaderCircle,CalendarCheck,Pause} from 'lucide-react';
+import {toast} from 'sonner';
+import {studentState} from './student-state';
+
+export type StudentAccount={wechat_auth_enabled?:boolean;wechat_authorization?:{linked:boolean;status:string;eligible:boolean};school_checkin_required?:boolean;id:string;student_id:string;owner_name:string;enabled:boolean;automatic:boolean;run_at:string;schedule_slot?:{start:string;end:string;seconds:number}|null;school_auth_required?:boolean;school_auth_reason?:string|null;ready_for_automation:boolean;confirmed_today:boolean;locationName:string|null;location:Record<string,any>|null;location_open?:boolean;configuration_checked?:boolean;planned_run_at?:string|null;variation?:{minutes:number;meters:number};recorded_today?:boolean;business_date?:string;server_time?:number;today_job?:{id:string;state:string;source:string;result:{result?:string;reason?:string;retryAt?:number}|null}|null;last_result:{result?:string;reason?:string;retryAt?:number;checkinWindow?:{start:string;end:string}}|null};
+type Request=(path:string,method?:string,body?:unknown)=>Promise<any>;
+
+export function SetupProgress({account:a,current,onAccount,onPlan}:{account:StudentAccount;current:'account'|'plan'|'today';onAccount:()=>void;onPlan:()=>void}){
+ if(a.ready_for_automation)return null;
+ const linked=!a.school_auth_required&&(!a.wechat_auth_enabled||!!a.wechat_authorization?.eligible),located=!!a.location&&a.location_open!==false;
+ return <ol className="setup-trail" aria-label="首次设置进度">{[{id:'account',title:'连接账号',done:linked,action:onAccount},{id:'plan',title:'设置计划',done:located,action:onPlan},{id:'today',title:'完成首次签到',done:false,action:undefined}].map((step,index)=><li key={step.id} className={current===step.id?'current':step.done?'complete':''} aria-current={current===step.id?'step':undefined}><button type="button" disabled={!step.action} onClick={step.action}><span>{step.done?<Check size={15}/>:index+1}</span>{step.title}</button></li>)}</ol>;
+}
+function useSchoolClock(serverTime?:number){
+ const[instant,setInstant]=useState(()=>new Date(serverTime?serverTime*1000:Date.now()));
+ useEffect(()=>{const origin=performance.now(),base=serverTime?serverTime*1000:Date.now();const update=()=>setInstant(new Date(base+performance.now()-origin));update();const timer=setInterval(update,1000);return()=>clearInterval(timer)},[serverTime]);
+ return instant.toLocaleTimeString('en-GB',{timeZone:'Asia/Shanghai',hour12:false});
+}
+export function StudentOverview({account:a,busy,taskState,onSettings,onAuthorize,onSubmit,onHistory,onReauthenticate,reauthenticating=false}:{account:StudentAccount;busy:boolean;taskState?:string;queuePosition?:number|null;onSettings:()=>void;onAuthorize:()=>void;onCheck:()=>void;onSubmit:()=>void;onHistory:()=>void;onReauthenticate:()=>void;reauthenticating?:boolean}){
+ const clock=useSchoolClock(a.server_time),status=studentState(a,clock,busy,taskState),scheduled=['scheduled','due'].includes(status.key),done=!!(a.recorded_today||a.confirmed_today);
+ const action={authorize:onAuthorize,settings:onSettings,submit:onSubmit,history:onHistory,reauthenticate:onReauthenticate,none:()=>{}}[status.action];
+ const date=a.business_date?new Date(a.business_date+'T12:00:00+08:00').toLocaleDateString('zh-CN',{timeZone:'Asia/Shanghai',month:'long',day:'numeric',weekday:'long'}):'今天';
+ return <div className="student-workspace"><SetupProgress account={a} current={a.school_checkin_required||a.school_auth_required?'account':!a.location||a.location_open===false?'plan':'today'} onAccount={onAuthorize} onPlan={onSettings}/>
+  <section className={'today-card status-'+status.tone} aria-live="polite"><div className="today-card-heading"><span>{date}</span><span className={'status-label '+(done?'good':busy?'processing':scheduled?'ready':'')}>{done?<Check size={15}/>:busy?<LoaderCircle size={15} className="spin"/>:<span className="status-dot"/>}{done?(a.confirmed_today?'学校已确认':'已有学校记录'):busy?'处理中':scheduled?'每日计划已开启':!a.enabled?'已暂停':'待完成'}</span></div>
+   <div className="today-card-main"><div><h2>{scheduled?'今晚，已安排':status.title}</h2>{scheduled&&a.planned_run_at?<div className="execution-time">{a.planned_run_at.slice(0,5)}<span>预计执行 · 北京时间</span></div>:<p>{status.message}</p>}</div><div className={'today-symbol '+(done?'is-done':'')} aria-hidden="true">{done?<Check size={40}/>:!a.enabled?<Pause size={34}/>:<CalendarCheck size={36}/>}</div></div>
+   <div className="today-card-bottom"><span><MapPin size={17}/>{a.location_open!==false&&a.location?a.locationName:'尚未选择地点'}</span><button className={'button '+(scheduled?'':'primary')} onClick={action} disabled={reauthenticating}>{reauthenticating?<LoaderCircle size={17} className="spin"/>:null}{reauthenticating?'正在打开验证…':status.label}<ArrowRight size={17}/></button></div>
+   {status.key==='failed'&&clock>='21:06'&&clock<='23:24'&&<button className="text-link recovery-action" onClick={onSubmit}>问题已处理，继续签到<ArrowRight size={16}/></button>}
+  </section>
+  <div className="daily-summary"><div><Clock3 size={20}/><span>每日计划<strong>{a.run_at}{a.variation?.minutes?' 前后 5 分钟':''}</strong></span><button className="text-link" onClick={onSettings}>调整计划<ArrowRight size={15}/></button></div><div><ShieldCheck size={20}/><span>账号连接<strong>{a.school_auth_required?'学校验证待更新':a.school_checkin_required?'微信待连接':'连接正常'}</strong></span><button className="text-link" onClick={onAuthorize}>{a.school_auth_required||a.school_checkin_required?'去处理':'管理'}<ArrowRight size={15}/></button></div></div>
+ </div>;
+}
+
+export function StudentSettings({account:a,request,onSaved,onReauthenticate,reauthenticating=false,onAccount=()=>{},onDirtyChange=()=>{}}:{account:StudentAccount;request:Request;onSaved:()=>Promise<void>;onReauthenticate:()=>void;reauthenticating?:boolean;onAccount?:()=>void;onDirtyChange?:(dirty:boolean)=>void}){
+ const[presets,setPresets]=useState<{id:string;name:string}[]>([]),[preset,setPreset]=useState(a.location_open===false?'':a.location?.preset||''),[time,setTime]=useState(a.run_at),[automatic,setAutomatic]=useState(a.automatic),[enabled,setEnabled]=useState(a.enabled),[timeVariation,setTimeVariation]=useState(!!a.variation?.minutes),[locationVariation,setLocationVariation]=useState(!!a.variation?.meters),[busy,setBusy]=useState(false),[loadError,setLoadError]=useState(''),[loading,setLoading]=useState(true);
+ const loadLocations=()=>{setLoading(true);setLoadError('');request('/api/locations').then(v=>setPresets(v.locations)).catch(e=>setLoadError(e.message)).finally(()=>setLoading(false))};
+ useEffect(()=>{loadLocations()},[]);
+ const changed=preset!==(a.location?.preset||'')||time!==a.run_at||automatic!==a.automatic||enabled!==a.enabled||timeVariation!==!!a.variation?.minutes||locationVariation!==!!a.variation?.meters;
+ useEffect(()=>{onDirtyChange(changed);const prevent=(event:BeforeUnloadEvent)=>{if(changed){event.preventDefault();event.returnValue=''}};addEventListener('beforeunload',prevent);return()=>removeEventListener('beforeunload',prevent)},[changed]);
+ async function save(event:React.FormEvent){event.preventDefault();setBusy(true);try{await request('/api/accounts/'+a.id,'PATCH',{location:{mode:'preset',preset},run_at:time,automatic,enabled,variation:{minutes:timeVariation?5:0,meters:locationVariation?10:0}});toast.success('每日计划已保存');await onSaved()}catch(e){toast.error((e as Error).message)}finally{setBusy(false)}}
+ const ready=a.ready_for_automation&&!a.school_checkin_required&&!a.school_auth_required;
+ return <div className="plan-workspace"><SetupProgress account={a} current="plan" onAccount={onAccount} onPlan={()=>document.getElementById('plan-location')?.focus()}/>
+  <form onSubmit={save} className="plan-form panel"><div className="plan-fields"><label htmlFor="plan-location"><MapPin size={18}/>实际所在地点</label><select id="plan-location" required disabled={loading} value={preset} onChange={e=>setPreset(e.target.value)}><option value="" disabled>{loading?'正在读取地点…':'选择所在组团'}</option>{presets.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select>
+   {loadError&&<div role="alert" className="inline-error">{loadError}<button type="button" className="text-link" onClick={loadLocations}>重新加载</button></div>}
+   <label htmlFor="plan-time"><Clock3 size={18}/>每日偏好时间<span>北京时间</span></label><input id="plan-time" type="time" required min="21:06" max="23:24" value={time} onChange={e=>setTime(e.target.value)}/><p className="field-note">可选时段 21:06–23:24，按学校开放时间执行。</p></div>
+   <div className="plan-options"><div className="setting-row"><div><strong>时间随机浮动</strong><p>偏好时间前后 5 分钟</p></div><Switch.Root className="switch" checked={timeVariation} onCheckedChange={setTimeVariation} aria-label="时间随机浮动"><Switch.Thumb/></Switch.Root></div><div className="setting-row"><div><strong>位置随机浮动</strong><p>所选地点半径 10 米内</p></div><Switch.Root className="switch" checked={locationVariation} onCheckedChange={setLocationVariation} aria-label="位置随机浮动"><Switch.Thumb/></Switch.Root></div></div>
+   <div className="plan-automation"><div className="setting-row"><div><strong>每日自动执行</strong><p>{ready?'到时自动签到，无需每天操作':!a.ready_for_automation?'完成首次签到后即可开启':a.school_auth_required?'先更新学校验证':'先完成微信连接'}</p></div><Switch.Root className="switch" checked={automatic} onCheckedChange={setAutomatic} disabled={!ready&&!automatic} aria-label="每日自动执行"><Switch.Thumb/></Switch.Root></div>{!ready&&a.ready_for_automation&&<button className="text-link" type="button" onClick={a.school_auth_required?onReauthenticate:onAccount} disabled={reauthenticating}>去完成账号连接<ArrowRight size={15}/></button>}</div>
+   <details className="plan-details"><summary>时间与位置如何使用<ChevronDown size={16}/></summary><p>每天选择一次时间和位置，同一天刷新、重启和复查保持一致。使用实际所在地点，整个浮动范围须在学校允许区域内；提交前会再次检查。</p></details>
+   <div className="plan-save"><span>{changed?'有未保存的修改':a.schedule_slot?'今日安排 '+a.schedule_slot.start:'计划保存后安排'}{!enabled?' · 托管暂停':''}</span><button type="submit" className="button primary" disabled={busy||loading||!!loadError}>{busy?<LoaderCircle size={17} className="spin"/>:<Check size={17}/>}保存并继续<ArrowRight size={16}/></button></div>
+  </form><div className="plan-pause"><div><strong>暂停账号托管</strong><p>暂停后，手动签到和每日计划都将停止。</p></div><Switch.Root className="switch" checked={!enabled} onCheckedChange={value=>setEnabled(!value)} aria-label="暂停账号托管"><Switch.Thumb/></Switch.Root></div>
+ </div>;
+}
