@@ -51,14 +51,25 @@ class SupportManager:
         return {'class_management':cadre,'qq_available':bool(self.data.get('qq_bot').get('enabled'))}
     def class_snapshot(self,actor,account_id):
         self.data.owner(actor,account_id,require_cadre=actor['role']!='admin')
+        day=self.clock().date().isoformat()
         with self.session(account_id) as school:
             classes=school.classes();config=self.data.cadre(account_id)
             key=config.get('class_key') or (classes[0]['class_key'] if len(classes)==1 else '')
-            roster=school.roster(key,self.clock().date().isoformat()) if key else []
+            roster=school.roster(key,day) if key else []
+        # This is a read-only view over fresh official records. Do not rewrite
+        # original delivery evidence or release a claim after an uncertain POST.
+        verified={self.data.run_id(key+'\0'+r['student_id'],'class_report',day):r['status'] for r in roster if r['status'] in TERMINAL}
+        selected=set(config.get('targets',[]));confirmed=sum(r['student_id'] in selected and r['status'] in TERMINAL for r in roster)
+        runs=self.data.runs(account_id,with_ident=True)
+        for run in runs:
+            ident=run.pop('_ident')
+            if run['business_date']!=day:continue
+            if run['kind']=='class_report' and ident in verified:run['verified_school_status']=verified[ident]
+            if run['kind']=='class_bundle':run.update(verified_target_count=confirmed,selected_target_count=len(selected))
         return {'classes':classes,'students':[{k:r[k] for k in ('student_id','name','status')} for r in roster],
-            'business_date':self.clock().date().isoformat(),'pending_count':sum(r['status'] in PENDING for r in roster),
+            'business_date':day,'pending_count':sum(r['status'] in PENDING for r in roster),
             'settings':config,'configuration_revision':self.class_revision(config),'test_group_bound':bool(self.data.get('qq_test_destination').get('group_openid')),
-            'runs':self.data.runs(account_id),'remark_preview':daily_remark(self.clock().date().isoformat())}
+            'runs':runs,'remark_preview':daily_remark(day)}
     def class_revision(self,value):return self.store.vault.digest('class_settings',json.dumps(value,sort_keys=True,separators=(',',':')))
     def configure_class(self,actor,account_id,data):
         if actor['role']!='admin':raise WebError(403,'admin_required','班级自动填报由管理员配置。')

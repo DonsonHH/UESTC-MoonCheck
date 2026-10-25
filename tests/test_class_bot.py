@@ -128,6 +128,41 @@ class ClassBot(fixtures.WebCase):
         api.report('synthetic-class',TARGET,DAY,self.support.data,self.aid,self.store.execution_window)
         result=api.report('synthetic-class',TARGET,DAY,self.support.data,self.aid,self.store.execution_window)
         self.assertEqual(result['result'],'already_recorded');self.assertEqual(len(self.school.posts),1)
+    def test_snapshot_verifies_delivered_timeout_without_rewriting_original_outcome(self):
+        self.school.failure='delivered_timeout'
+        CadreSchool(self.school,lambda:self.instant).report('synthetic-class',TARGET,DAY,self.support.data,self.aid,self.store.execution_window)
+        before=copy.deepcopy(self.support.data.runs(self.aid))
+        self.assertEqual(before[0]['result']['result'],'submission_unknown')
+        response=self.req(self.c1,self.t1,'/api/class/'+self.aid)
+        self.assertEqual(response.status_code,200,response.json)
+        run=response.json['runs'][0]
+        self.assertEqual(run.get('verified_school_status'),'STUDENT_REPORTED','Current official status must resolve the display even if the POST timed out')
+        self.assertEqual(self.support.data.runs(self.aid),before,'Read-only verification must preserve original delivery evidence')
+        self.assertEqual(len(self.school.posts),1)
+        self.assertNotIn('_ident',run)
+    def test_snapshot_does_not_verify_historical_claim_from_today_record(self):
+        self.support.data.begin('synthetic-class\0'+TARGET,'class_report','2026-10-25',account_id=self.aid,initial={'result':'submission_unknown'})
+        self.school.rows[0]['recordStatusCode']='STUDENT_REPORTED'
+        value=self.req(self.c1,self.t1,'/api/class/'+self.aid).json
+        self.assertNotIn('verified_school_status',value['runs'][0])
+    def test_snapshot_bundle_view_uses_fresh_records_without_losing_original_counts(self):
+        self.parent_job();self.school.failure='delivered_timeout';self.support.report_class(self.aid,DAY)
+        response=self.req(self.c1,self.t1,'/api/class/'+self.aid)
+        self.assertEqual(response.status_code,200,response.json)
+        bundle=next(r for r in response.json['runs'] if r['kind']=='class_bundle')
+        self.assertEqual(bundle['result']['unconfirmed'],1)
+        self.assertEqual(bundle['verified_target_count'],1);self.assertEqual(bundle['selected_target_count'],1)
+        self.assertEqual(len(self.school.posts),1)
+    def test_roster_date_rollover_does_not_return_a_wrong_day_verification(self):
+        original=self.school.api
+        def rollover(path,**values):
+            result=original(path,**values)
+            if path.startswith('/class-cadre/checkin-list'):self.instant+=dt.timedelta(days=1)
+            return result
+        self.school.api=rollover
+        response=self.req(self.c1,self.t1,'/api/class/'+self.aid)
+        self.assertEqual(response.status_code,500,response.json)
+        self.assertEqual(response.json['error']['code'],'business_date_changed');self.assertEqual(self.school.posts,[])
     def test_unknown_school_status_never_counts_as_success(self):
         self.school.rows[0]['recordStatusCode']='NEW_UNKNOWN'
         with self.assertRaises(ToolError):CadreSchool(self.school,lambda:self.instant).report('synthetic-class',TARGET,DAY,self.support.data,self.aid,self.store.execution_window)

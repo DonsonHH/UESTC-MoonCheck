@@ -42,7 +42,9 @@ class CadreSchool:
                 dorm=r.get('dormitoryLocation')
                 rows.append({'student_id':r['studentSn'],'name':r['studentName'],'record_id':r['id'],'status':r['recordStatusCode'],
                     'dormitory':dorm if isinstance(dorm,str) and len(dorm)<=160 else ''})
-            if len(data)<100:return rows
+            if len(data)<100:
+                if self.clock().date().isoformat()!=day:raise ToolError('business_date_changed','class_roster')
+                return rows
         raise ToolError('class_roster_limit','class_roster')
     def study_option(self):
         data=self.school.api('/case-keyword/active?locationTypeCode=CAMPUS',stage='class_options')

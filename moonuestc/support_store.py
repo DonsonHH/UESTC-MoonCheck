@@ -112,8 +112,10 @@ class SupportStore:
             db.execute('DELETE FROM web_qq_contacts WHERE updated_at<?',(time.time()-86400*7,))
             db.execute('DELETE FROM web_qq_events WHERE created_at<?',(time.time()-86400*7,))
 
+    def run_id(self,scope,kind,day):return self.store.vault.digest('support_run',kind+'\0'+scope+'\0'+day)
+
     def begin(self,scope,kind,day,*,account_id=None,initial=None):
-        ident=self.store.vault.digest('support_run',kind+'\0'+scope+'\0'+day)
+        ident=self.run_id(scope,kind,day)
         with self.store.db(True) as db:
             row=db.execute('SELECT * FROM web_support_runs WHERE ident=?',(ident,)).fetchone()
             if row:return ident,False,self.store.vault.open(row['payload'],'support_run:'+ident)
@@ -127,12 +129,13 @@ class SupportStore:
             db.execute('UPDATE web_support_runs SET state=?,payload=?,updated_at=? WHERE ident=?',
                 (state,self.store.vault.seal(result,'support_run:'+ident),time.time(),ident))
 
-    def runs(self,account_id=None):
+    def runs(self,account_id=None,*,with_ident=False):
         with self.store.db() as db:
             rows=db.execute('SELECT * FROM web_support_runs'+(' WHERE account_id=?' if account_id else '')+' ORDER BY created_at DESC LIMIT 30',
                 (account_id,) if account_id else ()).fetchall()
             return [{'kind':r['kind'],'business_date':r['business_date'],'state':r['state'],'created_at':r['created_at'],
-                'result':self.store.vault.open(r['payload'],'support_run:'+r['ident'])} for r in rows]
+                'result':self.store.vault.open(r['payload'],'support_run:'+r['ident']),
+                **({'_ident':r['ident']} if with_ident else {})} for r in rows]
 
     def owner(self,actor,account_id,*,require_cadre=True):
         with self.store.db() as db:row=self.store._row(db,actor,account_id)
