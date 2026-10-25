@@ -27,6 +27,7 @@ class WebWorker:
         self.thread=None
         self.next_job_at=0
         self.wechat_manager=None
+        self.support_manager=None
 
     def schedule_once(self):
         state=State(self.store.directory)
@@ -99,6 +100,7 @@ class WebWorker:
             if job.get('attempt',0):result['retryExhausted']=True
             else:result['retryUnavailable']=True
         self.store.finish_job(job,result)
+        if self.support_manager:self.support_manager.after_job(job,result)
         return True
 
     def start(self):
@@ -120,8 +122,10 @@ class WebWorker:
         self.schedule_once()
         if time.monotonic()>=self.next_job_at and self.run_one():
             self.next_job_at=time.monotonic()+self.gap_seconds
+        if self.support_manager:self.support_manager.tick()
 
     def stop(self):
         self.stop_event.set()
         if self.thread: self.thread.join(timeout=3)
         if self.wechat_manager:self.wechat_manager.close()
+        if self.support_manager:self.support_manager.close()

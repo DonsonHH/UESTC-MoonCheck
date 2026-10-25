@@ -55,6 +55,25 @@ def collect():
             add(cookie.get("value"))
     for token_hash,csrf in db.execute("SELECT token_hash,csrf FROM web_sessions"):
         add(token_hash);add(csrf)
+    def support_values(value):
+        if isinstance(value,dict):
+            for name,item in value.items():
+                if name in ('app_id','app_secret','callback_key','openid','group_openid','student_id','class_key'):
+                    add(item)
+                if name=='targets' and isinstance(item,list):
+                    for target in item:add(target)
+                if name=='members' and isinstance(item,dict):
+                    for student,member in item.items():add(student);add(member)
+                support_values(item)
+        elif isinstance(value,list):
+            for item in value:support_values(item)
+    if db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='web_support_settings'").fetchone():
+        for name,payload in db.execute('SELECT name,payload FROM web_support_settings'):
+            support_values(opened(payload,'support:'+name))
+    if db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='web_qq_contacts'").fetchone():
+        for digest,payload in db.execute('SELECT digest,payload FROM web_qq_contacts'):
+            contact=opened(payload,'qq_contact:'+digest)
+            add(contact.get('target'));add(contact.get('sender'))
     db.close()
     config=Path(os.environ.get("MOON_CONFIG","/config/config.json"))
     def inspect(value):

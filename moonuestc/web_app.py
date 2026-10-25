@@ -4,6 +4,7 @@ import hashlib
 import hmac
 import ipaddress
 import os
+import re
 from pathlib import Path
 import sqlite3
 import time
@@ -20,6 +21,9 @@ from .web_service import WebWorker
 from .web_store import WebStore
 
 COOKIE='moon_dashboard_session'
+
+
+def re_qq_callback(path):return re.fullmatch(r'/api/qq/callback/[a-f0-9]{64}',path) is not None
 
 
 def normalize_origin(value,allow_http=False):
@@ -54,6 +58,10 @@ def create_app(directory,public_url,*,allow_http=False,start_worker=False,runner
     from .portal import PortalAuth
     portal=PortalAuth(store,school_verifier)
     worker=WebWorker(store,runner)
+    from .support_service import SupportManager
+    support=SupportManager(store)
+    worker.support_manager=support
+    app.extensions['moon_support']=support
     app.extensions['moon_store']=store
     app.extensions['moon_worker']=worker
     app.extensions['moon_portal']=portal
@@ -145,7 +153,7 @@ def create_app(directory,public_url,*,allow_http=False,start_worker=False,runner
             received=None
         if received!=origin:
             raise WebError(400,'host_not_allowed','请使用配置的访问地址。')
-        if request.path.startswith('/api/') and request.method not in ('GET','HEAD','OPTIONS'):
+        if request.path.startswith('/api/') and request.method not in ('GET','HEAD','OPTIONS') and not re_qq_callback(request.path):
             try:
                 sent=normalize_origin(request.headers.get('Origin'),not secure)
             except ToolError:
@@ -182,6 +190,11 @@ def create_app(directory,public_url,*,allow_http=False,start_worker=False,runner
         if error.status==429: response.headers['Retry-After']=str(int(error.retry_after)) if error.retry_after is not None else '900' if error.code in ('login_rate_limited','registration_rate_limited','captcha_rate_limited') else '20'
         return response
 
+    from .qq_bot import QQError
+    @app.errorhandler(QQError)
+    def qq_error(error):
+        return jsonify({'ok':False,'error':{'code':'qq_delivery_failed','message':'QQ 未确认本次操作，请检查机器人与群的主动消息权限。','platform_code':error.code}}),502
+
     @app.errorhandler(ToolError)
     def tool_error(error):
         return jsonify({'ok':False,'error':{'code':error.reason,'message':'服务器数据或配置不可用，请联系管理员。'}}),500
@@ -200,6 +213,65 @@ def create_app(directory,public_url,*,allow_http=False,start_worker=False,runner
 
     @app.get('/api/interface')
     def interface():return response_ok({'surface':surface,'adminInterface':surface=='admin','backgroundWorker':worker.thread is not None})
+
+    @app.post('/api/qq/callback/<callback_key>')
+    def qq_callback(callback_key):
+        if surface=='admin':raise WebError(404,'not_found','请求地址不存在。')
+        return jsonify(support.callback(callback_key,request.headers,request.get_data(cache=False)))
+
+    @app.get('/api/support/features')
+    @protected()
+    def support_features():return response_ok(support.feature_summary(g.moon_user))
+
+    @app.get('/api/qq/settings')
+    @protected(admin=True)
+    def qq_settings():return response_ok(support.bot_summary(origin if surface!='admin' else os.environ.get('MOON_STUDENT_PUBLIC_URL',origin)))
+
+    @app.patch('/api/qq/settings')
+    @protected(admin=True)
+    def qq_configure():support.configure_bot(body());return response_ok()
+
+    @app.post('/api/qq/probe')
+    @protected(admin=True)
+    def qq_probe():return response_ok(support.probe_bot())
+
+    @app.get('/api/qq/reminder')
+    @protected()
+    def qq_reminder():return response_ok(support.reminder_summary(g.moon_user))
+
+    @app.patch('/api/qq/reminder')
+    @protected()
+    def qq_reminder_save():return response_ok(support.configure_reminder(g.moon_user,body()))
+
+    @app.post('/api/qq/binding')
+    @protected()
+    def qq_binding():
+        if not support.data.get('qq_bot').get('enabled'):raise WebError(409,'qq_not_available','机器人暂未启用。')
+        return response_ok({'code':support.data.new_code('personal',user_id=g.moon_user['id']),'expires_in':600})
+
+    @app.get('/api/class/<account_id>')
+    @protected()
+    def class_snapshot(account_id):return response_ok(support.class_snapshot(g.moon_user,account_id))
+
+    @app.patch('/api/class/<account_id>')
+    @protected(admin=True)
+    def class_configure(account_id):return response_ok({'settings':support.configure_class(g.moon_user,account_id,body())})
+
+    @app.post('/api/class/<account_id>/group-binding')
+    @protected(admin=True)
+    def class_group_binding(account_id):
+        support.data.owner(g.moon_user,account_id)
+        return response_ok({'code':support.data.new_code('group',account_id=account_id),'expires_in':600})
+
+    @app.post('/api/class/<account_id>/test-message')
+    @protected(admin=True)
+    def class_test_message(account_id):
+        support.data.owner(g.moon_user,account_id)
+        if body()!={'confirm':True}:raise WebError(400,'confirmation_required','请确认发送测试消息。')
+        config=support.data.cadre(account_id)
+        if not config.get('group_openid'):raise WebError(409,'group_not_bound','请先绑定班级群。')
+        support.client_for_bot().send('group',config['group_openid'],'晚安成电：班级签到提醒连接测试，正式检查时间为每日 23:10。')
+        return response_ok({'sent':True})
 
     @app.get('/api/notice')
     def hosting_notice():
@@ -235,6 +307,7 @@ def create_app(directory,public_url,*,allow_http=False,start_worker=False,runner
     @app.get('/admin/accounts')
     @app.get('/admin/users')
     @app.get('/admin/history')
+    @app.get('/admin/class-bot')
     def admin_page():
         identity=current()
         if identity and identity[0]['role']!='admin':raise WebError(403,'admin_required','需要管理员权限。')
@@ -244,6 +317,8 @@ def create_app(directory,public_url,*,allow_http=False,start_worker=False,runner
     @app.get('/app/history')
     @app.get('/app/settings')
     @app.get('/app/authorization')
+    @app.get('/app/reminders')
+    @app.get('/app/class')
     def student_page():
         if not app.config['MOON_PORTAL_ENABLED']:raise WebError(404,'not_found','用户端尚未启用。')
         return send_from_directory(static/'ui','index.html')

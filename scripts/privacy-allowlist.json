@@ -1766,7 +1766,19 @@
       "path": "frontend/browser-tests/refresh-races.mjs",
       "match_sha256": "e26e78d61acc33e215d73590f716331407103fba6839d8d702812d6cf92531ef",
       "reason": "Reviewed synthetic browser-test identity; the loopback fixture blocks all external requests and uses no deployed account."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "moonuestc/qq_bot.py",
+      "match_sha256": "76fdc86070359be06ce458c7f582274e4e99bf863db624f5eb1963bd9114098d",
+      "reason": "Reviewed official QQ Authorization scheme literal QQBot followed by a runtime token; no embedded credential."
+    },
+    {
+      "rule": "credential_assignment",
+      "path": "tests/test_qq_api.py",
+      "match_sha256": "b5913a65c65f72aebcac448dd123cfe430476b5ea65df89b695fe5f788493810",
+      "reason": "Reviewed synthetic offline QQ access-token fixture; never a deployed token."
     }
   ],
-  "reviewed_donson_feature_version": "0.5.1+donson.25"
+  "reviewed_donson_feature_version": "0.5.1+donson.26"
 }

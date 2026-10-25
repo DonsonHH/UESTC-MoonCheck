@@ -15,6 +15,7 @@ services:
       TZ: Asia/Shanghai
       MOON_DATA: /data
       MOON_PUBLIC_URL: "http://127.0.0.1:${MOON_ADMIN_PORT:-4497}"
+      MOON_STUDENT_PUBLIC_URL: "${MOON_PUBLIC_URL:?Set the student public URL}"
       MOON_ALLOW_INSECURE_HTTP: "1"
       MOON_ALLOW_REGISTRATION: "0"
       MOON_ENABLE_PORTAL: "1"
