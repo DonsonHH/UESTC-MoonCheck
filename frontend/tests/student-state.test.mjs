@@ -48,3 +48,7 @@ test('a native account with two expired connections recovers school identity fir
  const s=studentState({...account,wechat_auth_enabled:true,school_checkin_required:true,school_auth_required:true},'21:10');
  assert.equal(s.action,'reauthenticate');
 });
+test('a first-time user with an external school record is not offered locked automation',()=>{
+ const s=studentState({...account,ready_for_automation:false,automatic:false,recorded_today:true},'22:05');
+ assert.equal(s.key,'first-recorded');assert.equal(s.action,'history');assert(!s.label.includes('开启'));
+});

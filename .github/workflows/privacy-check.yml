@@ -6,6 +6,25 @@ on:
 permissions:
   contents: read
 jobs:
+  frontend:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+      - name: Install pinned frontend dependencies
+        working-directory: frontend
+        run: |
+          npm install --global pnpm@11.25.0
+          pnpm install --frozen-lockfile --ignore-scripts
+      - name: State regression tests, type checking and production build
+        working-directory: frontend
+        run: |
+          node --test tests/*.test.mjs
+          pnpm run build
   application:
     runs-on: ubuntu-24.04
     steps:

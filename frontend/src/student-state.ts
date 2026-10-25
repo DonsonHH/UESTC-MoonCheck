@@ -13,6 +13,7 @@ export function studentState(a:HomeAccount,time:string,busy=false,taskState?:str
  const minute=time.slice(0,5),early=minute<'21:06',late=minute>'23:24';
  if(busy)return state('running',a.today_job?.result?.result==='retry_pending'?'稍后自动重试':taskState==='queued'?'签到任务已排队':'正在处理今日任务','完成后会自动更新结果，稍候即可。','history','查看进度','busy');
  if((a.recorded_today||a.confirmed_today)&&a.enabled&&a.wechat_auth_enabled&&a.school_checkin_required)return state('done-authorization','今日已完成','学校已有记录。连接微信后可继续后续每日计划。','authorize','连接微信','success');
+ if(a.recorded_today&&!a.ready_for_automation)return state('first-recorded','今日已有学校记录','今天无需重复签到。明晚在本站完成首次签到，学校确认后再开启每日计划。','history','查看今日记录','success');
  if(a.recorded_today||a.confirmed_today)return state('done','今日已完成','学校已有今日记录。'+(a.school_checkin_required?'学校当前要求在微信小程序完成后续签到。':a.automatic?'明天继续按每日计划执行。':'可以开启每日计划，让之后的签到自动完成。'),a.automatic||a.school_checkin_required?'history':'settings',a.automatic||a.school_checkin_required?'查看今日记录':'开启每日计划','success');
  if(!a.enabled)return state('paused','托管已暂停','计划已保留。关闭“暂停账号托管”并保存，即可恢复。','settings','恢复托管');
  if(a.wechat_auth_enabled&&a.school_auth_required)return state('authentication','更新学校验证','学校需要你完成验证码或二次验证。','reauthenticate','验证学校账号','warning');
