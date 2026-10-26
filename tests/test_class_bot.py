@@ -230,6 +230,89 @@ class ClassBot(fixtures.WebCase):
         response=self.req(self.ac,self.at,'/api/class/'+self.aid+'/test-message','POST',{'confirm':True,'test':False})
         self.assertEqual(response.status_code,200,response.json)
         self.assertEqual(len(self.qq.messages),1);self.assertNotIn('<qqbot-at-everyone />',self.qq.messages[0][2])
+    def opening(self,**changes):
+        self.support.data.put('cadre:'+self.aid,{**self.config,'opening_reminder':True,**changes},account_id=self.aid)
+    def test_opening_reminder_sends_at_2105_without_school_calls_and_survives_restart(self):
+        from moonuestc.support_service import SupportManager
+        self.opening();self.instant=self.instant.replace(hour=21,minute=4)
+        self.support.next_poll=0;self.support.tick();self.assertEqual(self.qq.messages,[])
+        self.instant=self.instant.replace(minute=5)
+        for _ in range(2):self.support.next_poll=0;self.support.tick()
+        self.assertEqual(len(self.qq.messages),1)
+        self.assertEqual(self.qq.messages[0][0:2],('group','synthetic-group'))
+        self.assertIn('<qqbot-at-everyone />',self.qq.messages[0][2]);self.assertIn('成电智慧学工',self.qq.messages[0][2])
+        self.assertNotIn(TARGET,self.qq.messages[0][2]);self.assertEqual(self.sessions,0);self.assertEqual(self.school.posts,[])
+        restarted=SupportManager(self.store,background=False,clock=lambda:self.instant,qq_factory=lambda config:self.qq)
+        try:
+            restarted.tick();self.assertEqual(len(self.qq.messages),1)
+            self.instant+=dt.timedelta(days=1);restarted.next_poll=0;restarted.tick()
+            self.assertEqual(len(self.qq.messages),2)
+        finally:restarted.close()
+    def test_opening_reminder_is_opt_in_and_independent_of_nightly_switches(self):
+        self.instant=self.instant.replace(hour=21,minute=5)
+        self.support.next_poll=0;self.support.tick();self.assertEqual(self.qq.messages,[])
+        self.opening(nightly_check=False,group_reminders=False)
+        self.support.next_poll=0;self.support.tick();self.assertEqual(len(self.qq.messages),1)
+        self.assertEqual(self.sessions,0)
+    def test_opening_reminder_never_uses_missing_or_test_destination(self):
+        self.instant=self.instant.replace(hour=21,minute=5)
+        self.opening(group_openid='');self.support.next_poll=0;self.support.tick()
+        self.opening();self.support.data.put('qq_test_destination',{'group_openid':'synthetic-group'})
+        self.support.next_poll=0;self.support.tick()
+        self.assertEqual(self.qq.messages,[]);self.assertEqual(self.sessions,0)
+    def test_opening_reminder_refuses_late_or_old_day_delivery(self):
+        self.opening()
+        self.instant=self.instant.replace(hour=21,minute=4);self.support.remind_opening(self.aid,DAY)
+        self.instant=self.instant.replace(minute=11);self.support.remind_opening(self.aid,DAY)
+        self.instant=self.instant.replace(minute=5);self.support.remind_opening(self.aid,'2026-10-25')
+        self.assertEqual(self.qq.messages,[])
+    def test_queued_opening_reminder_observes_latest_pause(self):
+        self.opening();self.instant=self.instant.replace(hour=21,minute=5);queued=[]
+        with patch.object(self.support,'submit',side_effect=lambda key,function:queued.append(function)):
+            self.support.next_poll=0;self.support.tick()
+        self.assertEqual(len(queued),1);self.opening(opening_reminder=False)
+        queued[0]();self.assertEqual(self.qq.messages,[])
+    def test_opening_quota_fallback_is_labeled_and_has_no_roster(self):
+        self.opening();self.instant=self.instant.replace(hour=21,minute=5);original=self.qq.send
+        def quota(kind,target,text,**values):
+            if '<qqbot-at-everyone />' in text:
+                self.qq.messages.append((kind,target,text,values));raise QQError(40034142,400)
+            return original(kind,target,text,**values)
+        self.qq.send=quota
+        for _ in range(2):self.support.next_poll=0;self.support.tick()
+        self.assertEqual(len(self.qq.messages),2)
+        self.assertNotIn('<qqbot-at-everyone />',self.qq.messages[1][2]);self.assertIn('@全体额度不足',self.qq.messages[1][2])
+        self.assertNotIn('未签到名单',self.qq.messages[1][2]);self.assertNotIn(TARGET,self.qq.messages[1][2])
+        run=next(r for r in self.support.data.runs(self.aid) if r['kind']=='group_opening_reminder')
+        self.assertEqual(run['result']['result'],'notification_sent_without_mention')
+    def test_opening_quota_fallback_observes_latest_pause_and_window(self):
+        self.opening();self.instant=self.instant.replace(hour=21,minute=5)
+        def pause(kind,target,text,**values):
+            self.qq.messages.append((kind,target,text,values));self.opening(opening_reminder=False)
+            self.instant=self.instant.replace(minute=11);raise QQError(40034142,400)
+        self.qq.send=pause;self.support.next_poll=0;self.support.tick()
+        self.assertEqual(len(self.qq.messages),1)
+        self.assertEqual(self.support.data.runs(self.aid)[0]['result']['result'],'reminder_cancelled')
+    def test_opening_transport_failure_does_not_fallback_or_retry(self):
+        self.opening();self.instant=self.instant.replace(hour=21,minute=5);self.qq.fail=True
+        for _ in range(2):self.support.next_poll=0;self.support.tick()
+        self.assertEqual(len(self.qq.messages),1)
+        self.assertEqual(self.support.data.runs(self.aid)[0]['result']['result'],'notification_failed')
+    def test_opening_reminder_has_separate_claim_from_2310_notice(self):
+        self.opening();self.instant=self.instant.replace(hour=21,minute=5)
+        self.support.next_poll=0;self.support.tick()
+        self.instant=self.instant.replace(hour=23,minute=10);self.support.next_poll=0;self.support.tick()
+        self.assertEqual(len(self.qq.messages),2)
+        kinds={r['kind'] for r in self.support.data.runs(self.aid)}
+        self.assertTrue({'group_opening_reminder','group_reminder','group_check'}<=kinds)
+    def test_opening_reminder_admin_switch_validates_boolean_and_preserves_other_settings(self):
+        response=self.req(self.ac,self.at,'/api/class/'+self.aid,'PATCH',{'opening_reminder':True})
+        self.assertEqual(response.status_code,200,response.json)
+        saved=self.support.data.cadre(self.aid)
+        self.assertTrue(saved['opening_reminder']);self.assertEqual(saved['targets'],self.config['targets'])
+        self.assertEqual(saved['group_openid'],self.config['group_openid'])
+        self.assertEqual(self.req(self.ac,self.at,'/api/class/'+self.aid,'PATCH',{'opening_reminder':'true'}).status_code,400)
+        self.assertEqual(self.req(self.c1,self.t1,'/api/class/'+self.aid,'PATCH',{'opening_reminder':False}).status_code,403)
     def test_no_qq_binding_means_no_personal_messages_and_disabled_by_default(self):
         response=self.req(self.c1,self.t1,'/api/qq/reminder');self.assertFalse(response.json['enabled']);self.assertFalse(response.json['linked'])
         self.assertEqual(self.req(self.c1,self.t1,'/api/qq/reminder','PATCH',{'enabled':True,'consent_version':'2026-10-26-qq-v1'}).status_code,409)

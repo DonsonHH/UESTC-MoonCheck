@@ -10,7 +10,7 @@ from concurrent.futures import ThreadPoolExecutor
 from .class_cadre import school_session,daily_remark,PENDING
 from .errors import ToolError
 from .policy import now,valid_today,TERMINAL
-from .qq_bot import QQClient,QQError,event_context,group_message,identifier,verified_callback
+from .qq_bot import QQClient,QQError,event_context,group_message,opening_message,quota_message,identifier,verified_callback
 from .support_store import SupportStore
 from .web_errors import WebError
 
@@ -74,14 +74,14 @@ class SupportManager:
     def configure_class(self,actor,account_id,data):
         if actor['role']!='admin':raise WebError(403,'admin_required','班级自动填报由管理员配置。')
         self.data.owner(actor,account_id,require_cadre=False)
-        allowed={'class_key','targets','report_enabled','group_reminders','nightly_check','members','group_openid','if_match'}
+        allowed={'class_key','targets','report_enabled','group_reminders','opening_reminder','nightly_check','members','group_openid','if_match'}
         if not isinstance(data,dict) or set(data)-allowed:raise WebError(400,'invalid_fields','班级参数不正确。')
         current=self.data.cadre(account_id)
         expected=data.get('if_match',self.class_revision(current))
         if expected!=self.class_revision(current):raise WebError(409,'class_configuration_changed','班级设置已更新，请刷新后再保存。')
         data={k:v for k,v in data.items() if k!='if_match'}
-        value={**{'targets':[],'report_enabled':False,'group_reminders':False,'nightly_check':True,'members':{},'group_openid':''},**current,**copy.deepcopy(data)}
-        if any(type(value.get(k)) is not bool for k in ('report_enabled','group_reminders','nightly_check')):raise WebError(400,'invalid_fields','开关参数不正确。')
+        value={**{'targets':[],'report_enabled':False,'group_reminders':False,'opening_reminder':False,'nightly_check':True,'members':{},'group_openid':''},**current,**copy.deepcopy(data)}
+        if any(type(value.get(k)) is not bool for k in ('report_enabled','group_reminders','opening_reminder','nightly_check')):raise WebError(400,'invalid_fields','开关参数不正确。')
         if not isinstance(value.get('class_key'),str) or not isinstance(value['targets'],list) or len(value['targets'])>100 or not all(isinstance(s,str) and re.fullmatch('[0-9]{8,20}',s) for s in value['targets']):raise WebError(400,'invalid_class_targets','请选择班级中的学生。')
         if not isinstance(value['members'],dict) or len(value['members'])>300:raise WebError(400,'invalid_members','QQ 映射不正确。')
         try:
@@ -196,24 +196,38 @@ class SupportManager:
                 'already_recorded':sum(r['result']=='already_recorded' for r in results),'unconfirmed':sum(r['result']=='submission_unknown' for r in results)})
             return results
         except ToolError as error:self.data.finish(ident,{'result':'class_failed','reason':error.reason},'failed')
+    def group_delivery_allowed(self,account_id,day,target,kind,*,class_key=None):
+        config=self.data.cadre(account_id) if account_id else {}
+        opening=kind=='group_opening_reminder'
+        window=self.opening_window(day) if opening else self.reminder_window(day)
+        enabled=config.get('opening_reminder',False) if opening else config.get('nightly_check',True) and config.get('group_reminders')
+        if not window or not enabled or not target or not config.get('class_key') or config.get('group_openid')!=target or class_key is not None and config.get('class_key')!=class_key or self.data.get('qq_test_destination').get('group_openid')==target or not self.data.get('qq_bot').get('enabled'):return False
+        with self.store.db() as db:
+            row=db.execute('SELECT a.enabled,a.owner_id,u.active,u.role FROM web_accounts a JOIN web_users u ON u.id=a.owner_id WHERE a.id=?',(account_id,)).fetchone()
+        return bool(row and row['enabled'] and row['active'] and (not self.store.require_notice or self.store.notice_accepted({'id':row['owner_id'],'role':row['role']})))
     def send_once(self,scope,kind,day,target,text,account_id=None,*,class_key=None):
+        group=kind in ('group_reminder','group_opening_reminder')
+        if group and not self.group_delivery_allowed(account_id,day,target,kind,class_key=class_key):return 'cancelled'
         ident,fresh,_=self.data.begin(scope,kind,day,account_id=account_id,initial={'result':'delivery_unknown'})
         if not fresh:return
-        try:self.client_for_bot().send('group' if kind=='group_reminder' else 'user',target,text)
+        try:self.client_for_bot().send('group' if group else 'user',target,text)
         except QQError as error:
-            if kind=='group_reminder' and error.code==40034142 and '<qqbot-at-everyone />' in text:
+            if group and error.code==40034142 and '<qqbot-at-everyone />' in text:
                 # An explicit quota rejection means no first message was sent.
                 # Preserve useful delivery without claiming an @everyone worked.
-                current=self.data.cadre(account_id) if account_id else {}
-                if not self.reminder_window(day) or not current.get('nightly_check',True) or not current.get('group_reminders') or current.get('group_openid')!=target or class_key is not None and current.get('class_key')!=class_key or self.data.get('qq_test_destination').get('group_openid')==target or not self.data.get('qq_bot').get('enabled'):
+                if not self.group_delivery_allowed(account_id,day,target,kind,class_key=class_key):
                     self.data.finish(ident,{'result':'reminder_cancelled','all_mention_code':40034142});return 'cancelled'
-                fallback='【签到提醒｜本次 @全体额度不足】\n以下为未签到名单；本条不触发 @全体。\n\n'+text.replace('<qqbot-at-everyone />','',1).lstrip()
+                fallback=quota_message(text)
                 try:self.client_for_bot().send('group',target,fallback)
                 except QQError as second:
                     self.data.finish(ident,{'result':'notification_failed','code':second.code,'httpStatus':second.http,'all_mention_code':40034142,'fallback_attempted':True},'failed');return 'failed'
                 self.data.finish(ident,{'result':'notification_sent_without_mention','all_mention_code':40034142,'mentions_everyone':False});return 'sent_without_mention'
             self.data.finish(ident,{'result':'notification_failed','code':error.code,'httpStatus':error.http},'failed');return 'failed'
         self.data.finish(ident,{'result':'notification_sent'});return 'sent'
+    def remind_opening(self,account_id,day):
+        config=self.data.cadre(account_id);target=config.get('group_openid')
+        if not self.group_delivery_allowed(account_id,day,target,'group_opening_reminder',class_key=config.get('class_key')):return
+        return self.send_once(account_id,'group_opening_reminder',day,target,opening_message(day),account_id,class_key=config['class_key'])
     def remind_class(self,account_id,day):
         if not self.reminder_window(day):return
         config=self.data.cadre(account_id)
@@ -258,6 +272,8 @@ class SupportManager:
             latest=self.data.reminder(user_id);latest['last_status']=state;self.data.put('reminder:'+str(user_id),latest,user_id=user_id)
     def reminder_window(self,day):
         instant=self.clock();return instant.date().isoformat()==day and '23:10'<=instant.strftime('%H:%M')<'23:16'
+    def opening_window(self,day):
+        instant=self.clock();return instant.date().isoformat()==day and '21:05'<=instant.strftime('%H:%M')<'21:11'
     def tick(self):
         if self.closed or time.monotonic()<self.next_poll:return
         self.next_poll=time.monotonic()+20;instant=self.clock();day=instant.date().isoformat();clock=instant.strftime('%H:%M')
@@ -266,6 +282,8 @@ class SupportManager:
         for row,config in self.data.cadres():
             if not row['enabled'] or not row['active']:continue
             if self.store.require_notice and not self.store.notice_accepted({'id':row['owner_id'],'role':row['role']}):continue
+            if '21:05'<=clock<'21:11' and config.get('opening_reminder',False):
+                self.submit('opening:'+row['id'],lambda aid=row['id']:self.remind_opening(aid,day))
             if config.get('report_enabled') and '21:06'<=clock<='23:24':
                 # Recheck-only calls are bounded to once per minute after restart.
                 with self.store.db() as db:

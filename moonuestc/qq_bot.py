@@ -126,6 +126,14 @@ def event_context(event):
     except (QQError,AttributeError):return None
 
 
+def opening_message(day):
+    return '<qqbot-at-everyone />\n'+f'晚安成电 · {day} 21:05\n晚安打卡已开始，请大家打开「成电智慧学工」小程序，及时完成今晚打卡；已完成的同学可忽略本条提醒。'
+
+
+def quota_message(text):
+    return '【签到提醒｜本次 @全体额度不足】\n本条为普通消息，未触发 @全体。\n\n'+text.replace('<qqbot-at-everyone />','',1).lstrip()
+
+
 def group_message(day,pending,mapping=None):
     if not pending:return f'晚安成电 · {day} 23:10 检查：本班没有待签到记录。'
     def field(value,limit):
