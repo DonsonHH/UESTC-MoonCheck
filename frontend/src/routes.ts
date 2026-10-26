@@ -10,7 +10,7 @@ function initializeEntry(){
  history.replaceState({...history.state,moonRouteIndex:currentIndex},'',location.href);
 }
 export const adminRoutes:Record<string,string>={overview:'/admin',accounts:'/admin/accounts',users:'/admin/users',history:'/admin/history',support:'/admin/class-bot'};
-export const studentRoutes:Record<string,string>={overview:'/app',history:'/app/history',settings:'/app/settings',authorization:'/app/authorization',reminders:'/app/reminders'};
+export const studentRoutes:Record<string,string>={overview:'/app',history:'/app/history',settings:'/app/settings',authorization:'/app/authorization'};
 export function navigate(path:string,replace=false){
  initializeEntry();
  if(location.pathname+location.search===path)return;

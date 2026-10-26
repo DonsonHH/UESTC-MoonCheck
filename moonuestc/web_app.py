@@ -236,19 +236,13 @@ def create_app(directory,public_url,*,allow_http=False,start_worker=False,runner
     @protected(admin=True)
     def qq_probe():return response_ok(support.probe_bot())
 
-    @app.get('/api/qq/reminder')
-    @protected()
-    def qq_reminder():return response_ok(support.reminder_summary(g.moon_user))
+    @app.get('/api/qq/operator')
+    @protected(admin=True)
+    def operator_summary():return response_ok(support.operator.summary())
 
-    @app.patch('/api/qq/reminder')
-    @protected()
-    def qq_reminder_save():return response_ok(support.configure_reminder(g.moon_user,body()))
-
-    @app.post('/api/qq/binding')
-    @protected()
-    def qq_binding():
-        if not support.data.get('qq_bot').get('enabled'):raise WebError(409,'qq_not_available','机器人暂未启用。')
-        return response_ok({'code':support.data.new_code('personal',user_id=g.moon_user['id']),'expires_in':600})
+    @app.patch('/api/qq/operator')
+    @protected(admin=True)
+    def operator_configure():return response_ok(support.operator.configure(body()))
 
     @app.get('/api/class/<account_id>')
     @protected(admin=True)
@@ -323,7 +317,6 @@ def create_app(directory,public_url,*,allow_http=False,start_worker=False,runner
     @app.get('/app/history')
     @app.get('/app/settings')
     @app.get('/app/authorization')
-    @app.get('/app/reminders')
     def student_page():
         if not app.config['MOON_PORTAL_ENABLED']:raise WebError(404,'not_found','用户端尚未启用。')
         return send_from_directory(static/'ui','index.html')

@@ -135,7 +135,7 @@ def quota_message(text):
 
 
 def group_message(day,pending,mapping=None):
-    if not pending:return f'晚安成电 · {day} 23:10 检查：本班没有待签到记录。'
+    if not pending:return f'晚安成电 · {day} 23:10\n🎉 今晚学校待处理名单已清零！\n感谢大家及时完成打卡或情况登记，早点休息，晚安～'
     def field(value,limit):
         # School fields cannot inject mentions, Markdown links or extra lines.
         text=str(value or '')[:limit]

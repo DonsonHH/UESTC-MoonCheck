@@ -53,7 +53,7 @@ class SupportStore:
             return [(row['id'],self.get(row['name'],db=db)) for row in rows]
 
     def new_code(self,kind,*,account_id=None,user_id=None):
-        if kind not in ('group','personal'):raise WebError(400,'invalid_binding_kind','不支持此绑定方式。')
+        if kind!='group':raise WebError(400,'invalid_binding_kind','不支持此绑定方式。')
         code=secrets.token_hex(8).upper();digest=self.store.vault.digest('support_binding',code)
         with self.store.db(True) as db:
             db.execute('DELETE FROM web_support_tokens WHERE expires_at<?',(time.time(),))
@@ -75,12 +75,6 @@ class SupportStore:
                 if value.get('group_openid')!=context['target']:value['members']={}
                 value['group_openid']=context['target']
                 self.put(name,value,account_id=row['account_id'],db=db)
-            elif row['kind']=='personal':
-                if context['kind']!='user':return False
-                name='reminder:'+str(row['user_id']);value=self.get(name,{'enabled':False},db=db)
-                value.update(openid=context['target'],bound_at=time.time())
-                # Binding is independent of permission to send daily reminders.
-                self.put(name,value,user_id=row['user_id'],db=db)
             else:return False
             db.execute('DELETE FROM web_support_tokens WHERE digest=?',(digest,))
         return row['kind']

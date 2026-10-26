@@ -13,13 +13,16 @@ from .policy import now,valid_today,TERMINAL
 from .qq_bot import QQClient,QQError,event_context,group_message,opening_message,quota_message,identifier,verified_callback
 from .support_store import SupportStore
 from .web_errors import WebError
+from .operator_notifications import OperatorNotifications
 
 
 class SupportManager:
     def __init__(self,store,*,session_factory=school_session,qq_factory=QQClient,clock=now,background=True):
         self.store=store;self.data=SupportStore(store);self.session_factory=session_factory;self.qq_factory=qq_factory;self.clock=clock
         self.background=background;self.pool=ThreadPoolExecutor(max_workers=1,thread_name_prefix='moon-support') if background else None
+        self.notification_pool=ThreadPoolExecutor(max_workers=1,thread_name_prefix='moon-qq-notifications') if background else None
         self.lock=threading.RLock();self.pending=set();self.client=None;self.client_key=None;self.next_poll=0;self.next_prune=0;self.closed=False
+        self.operator=OperatorNotifications(store,self.data,self.client_for_bot)
     def session(self,account_id,*,allow_login=True):return self.session_factory(self.store,account_id,clock=self.clock,allow_login=allow_login)
     def client_for_bot(self):
         config=self.data.get('qq_bot')
@@ -34,7 +37,7 @@ class SupportManager:
         value=self.data.get('qq_bot')
         return {'configured':bool(value.get('app_id') and value.get('app_secret')),'enabled':bool(value.get('enabled')),
             'callback_url':origin+'/api/qq/callback/'+value['callback_key'] if value.get('callback_key') else '',
-            'last_verified_at':value.get('verified_at'),'last_callback':value.get('last_callback')}
+            'last_verified_at':value.get('verified_at'),'last_callback':value.get('last_callback'),'operator':self.operator.summary()}
     def configure_bot(self,data):
         if not isinstance(data,dict) or set(data)-{'app_id','app_secret','enabled'}:raise WebError(400,'invalid_fields','机器人参数不正确。')
         value=self.data.get('qq_bot');value.update(data)
@@ -45,7 +48,7 @@ class SupportManager:
         self.client_for_bot().identity();value=self.data.get('qq_bot');value['verified_at']=time.time();self.data.put('qq_bot',value)
         return {'verified':True}
     def feature_summary(self,actor):
-        return {'qq_available':bool(self.data.get('qq_bot').get('enabled'))}
+        return {}
     def class_snapshot(self,actor,account_id):
         if actor['role']!='admin':raise WebError(403,'admin_required','班级功能仅供管理员使用。')
         self.data.owner(actor,account_id,require_cadre=False)
@@ -101,22 +104,6 @@ class SupportManager:
             self.data.put('cadre:'+account_id,value,account_id=account_id,db=db)
             self.store._audit(db,actor,'class_settings_updated',account_id)
         return value
-    def reminder_summary(self,actor):
-        value=self.data.reminder(actor['id'])
-        return {'enabled':bool(value.get('enabled')),'linked':bool(value.get('openid')),'last_status':value.get('last_status'),
-            'available':bool(self.data.get('qq_bot').get('enabled')),'at':'23:10','consent_version':'2026-10-26-qq-v1'}
-    def configure_reminder(self,actor,data):
-        if not isinstance(data,dict) or set(data)-{'enabled','consent_version','unbind'} or type(data.get('enabled',False)) is not bool:raise WebError(400,'invalid_fields','提醒参数不正确。')
-        value=self.data.reminder(actor['id'])
-        if data.get('unbind'):
-            self.data.put('reminder:'+str(actor['id']),{'enabled':False},user_id=actor['id']);return self.reminder_summary(actor)
-        if data.get('enabled'):
-            if data.get('consent_version')!='2026-10-26-qq-v1':raise WebError(428,'qq_consent_required','请先确认 QQ 提醒说明。')
-            if not value.get('openid'):raise WebError(409,'qq_binding_required','请先添加并绑定机器人。')
-            if not self.data.get('qq_bot').get('enabled'):raise WebError(409,'qq_not_available','机器人暂未启用。')
-            value.update(consent_version=data['consent_version'],accepted_at=time.time())
-        value['enabled']=data.get('enabled',False);self.data.put('reminder:'+str(actor['id']),value,user_id=actor['id'])
-        return self.reminder_summary(actor)
     def submit(self,key,function):
         with self.lock:
             if self.closed or key in self.pending or len(self.pending)>=32:return
@@ -126,7 +113,7 @@ class SupportManager:
             except Exception:pass  # No raw network errors, school records or credentials in logs.
             finally:
                 with self.lock:self.pending.discard(key)
-        if self.pool:self.pool.submit(run)
+        if self.pool:(self.notification_pool if key.startswith('operator') else self.pool).submit(run)
         else:run()
     def callback(self,key,headers,raw):
         config=self.data.get('qq_bot')
@@ -153,13 +140,13 @@ class SupportManager:
                     if success:self.data.contact(context)
                     reply=('班级群已绑定；已开启的每日提醒将按设置执行，请确保机器人有管理员和主动发言权限。' if context['kind']=='group' else 'QQ 已绑定；请返回网页，自行开启每日提醒。') if success else '绑定码无效、过期或场景不匹配，请重新生成。'
                 elif content in ('取消提醒','停止提醒') and context['kind']=='user':
-                    for uid,value in self.data.reminders():
-                        if value.get('openid')==context['sender']:
-                            value['enabled']=False;self.data.put('reminder:'+str(uid),value,user_id=uid)
-                    reply='个人提醒已关闭。'
+                    current=self.data.get('qq_operator')
+                    if current.get('openid')==context['sender']:
+                        self.operator.configure({'enabled':False});reply='QQ 单独通知已关闭。'
                 if reply:self.submit('reply:'+self.store.vault.digest('event_reply',event_id),lambda:self.client_for_bot().send(context['kind'],context['target'],reply,msg_id=context['msg_id']))
         return response
     def after_job(self,job,result):
+        self.submit('operator:'+job['id'],lambda:self.operator.notify(job['id']))
         if job['mode']=='checkin' and job['source']=='schedule' and result.get('result') in ('confirmed','already_recorded'):
             config=self.data.cadre(job['account_id'])
             if config.get('report_enabled') and config.get('targets') and config.get('report_trigger','after_self')=='after_self':
@@ -256,27 +243,6 @@ class SupportManager:
             self.data.finish(ident,{'result':'class_checked','total':len(rows),'pending':len(pending),'delivery':state})
         except ToolError as error:
             self.data.finish(ident,{'result':'class_read_failed','reason':error.reason},'failed')
-    def remind_person(self,user_id,day):
-        if not self.reminder_window(day):return
-        config=self.data.reminder(user_id)
-        if not config.get('enabled') or not config.get('openid') or config.get('consent_version')!='2026-10-26-qq-v1':return
-        with self.store.db() as db:
-            row=db.execute('SELECT a.id,u.role FROM web_accounts a JOIN web_users u ON u.id=a.owner_id WHERE a.owner_id=? AND a.enabled=1 AND u.active=1',(user_id,)).fetchone()
-        if not row or self.store.require_notice and not self.store.notice_accepted({'id':user_id,'role':row['role']}):return
-        ident,fresh,_=self.data.begin(str(user_id),'personal_check',day,account_id=row['id'])
-        if not fresh:return
-        try:
-            with self.session(row['id']) as school:status=valid_today(school.school.today(),self.clock())
-            labels={'CHECKED_IN':'学校已确认今日签到','STUDENT_REPORTED':'学校已登记本人情况说明','INSTRUCTOR_REPORTED':'学校已登记情况说明','EXEMPT':'学校记录为免签到','PENDING':'学校尚未记录今日签到，请在截止前处理'}
-            text=f'晚安成电 · {day} 23:10\n'+labels.get(status,'学校已有今日记录')
-        except ToolError:text=f'晚安成电 · {day} 23:10\n暂时无法核实学校记录，请自行打开学校小程序确认。'
-        latest=self.data.reminder(user_id)
-        if not self.reminder_window(day) or not latest.get('enabled') or latest.get('openid')!=config['openid']:
-            self.data.finish(ident,{'result':'reminder_cancelled'});return
-        state=self.send_once(str(user_id),'personal_reminder',day,config['openid'],text,row['id'])
-        self.data.finish(ident,{'result':'personal_checked','delivery':state})
-        if state:
-            latest=self.data.reminder(user_id);latest['last_status']=state;self.data.put('reminder:'+str(user_id),latest,user_id=user_id)
     def reminder_window(self,day):
         instant=self.clock();return instant.date().isoformat()==day and '23:10'<=instant.strftime('%H:%M')<'23:16'
     def opening_window(self,day):
@@ -286,6 +252,7 @@ class SupportManager:
         self.next_poll=time.monotonic()+20;instant=self.clock();day=instant.date().isoformat();clock=instant.strftime('%H:%M')
         if time.monotonic()>=self.next_prune:
             self.data.prune();self.next_prune=time.monotonic()+60
+        if self.data.get('qq_operator').get('enabled'):self.submit('operator-poll',self.operator.tick)
         for row,config in self.data.cadres():
             if not row['enabled'] or not row['active']:continue
             if self.store.require_notice and not self.store.notice_accepted({'id':row['owner_id'],'role':row['role']}):continue
@@ -301,10 +268,8 @@ class SupportManager:
                     self.submit('class:'+row['id'],lambda aid=row['id']:self.report_class(aid,day))
             if '23:10'<=clock<'23:16' and config.get('nightly_check',True):
                 self.submit('group:'+row['id'],lambda aid=row['id']:self.remind_class(aid,day))
-        if '23:10'<=clock<'23:16' and self.data.get('qq_bot').get('enabled'):
-            for uid,config in self.data.reminders():
-                if config.get('enabled'):self.submit('personal:'+str(uid),lambda uid=uid:self.remind_person(uid,day))
     def close(self):
         self.closed=True
         if self.pool:self.pool.shutdown(wait=True,cancel_futures=True)
+        if self.notification_pool:self.notification_pool.shutdown(wait=True,cancel_futures=True)
         if self.client:self.client.close()

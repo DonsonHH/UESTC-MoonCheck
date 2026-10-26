@@ -378,23 +378,8 @@ class ClassBot(fixtures.WebCase):
         self.assertEqual(saved['group_openid'],self.config['group_openid'])
         self.assertEqual(self.req(self.ac,self.at,'/api/class/'+self.aid,'PATCH',{'opening_reminder':'true'}).status_code,400)
         self.assertEqual(self.req(self.c1,self.t1,'/api/class/'+self.aid,'PATCH',{'opening_reminder':False}).status_code,403)
-    def test_no_qq_binding_means_no_personal_messages_and_disabled_by_default(self):
-        response=self.req(self.c1,self.t1,'/api/qq/reminder');self.assertFalse(response.json['enabled']);self.assertFalse(response.json['linked'])
-        self.assertEqual(self.req(self.c1,self.t1,'/api/qq/reminder','PATCH',{'enabled':True,'consent_version':'2026-10-26-qq-v1'}).status_code,409)
-    def test_personal_binding_never_automatically_enables_reminders(self):
-        code=self.support.data.new_code('personal',user_id=self.u1['id'])
-        self.assertEqual(self.callback(self.event('绑定 '+code)).status_code,200)
-        value=self.support.data.reminder(self.u1['id']);self.assertTrue(value['openid']);self.assertFalse(value['enabled'])
-        self.assertFalse(self.support.data.reminder(self.u2['id'])['enabled'])
-        self.assertEqual(self.req(self.c1,self.t1,'/api/qq/reminder','PATCH',{'enabled':True}).status_code,428)
-        response=self.req(self.c1,self.t1,'/api/qq/reminder','PATCH',{'enabled':True,'consent_version':'2026-10-26-qq-v1'})
-        self.assertEqual(response.status_code,200,response.json);self.assertTrue(response.json['enabled']);self.assertNotIn('synthetic-person',response.get_data(as_text=True))
-    def test_group_event_cannot_consume_personal_code(self):
-        code=self.support.data.new_code('personal',user_id=self.u1['id'])
-        self.callback(self.event('绑定 '+code,group=True))
-        self.assertFalse(self.support.data.reminder(self.u1['id']).get('openid'))
-        self.callback(self.event('绑定 '+code,ident='synthetic-message-2'))
-        self.assertTrue(self.support.data.reminder(self.u1['id']).get('openid'))
+    def test_retired_personal_binding_kind_is_rejected(self):
+        with self.assertRaises(WebError):self.support.data.new_code('personal',user_id=self.u1['id'])
     def test_group_binding_code_is_single_use_and_only_updates_its_class(self):
         code=self.support.data.new_code('group',account_id=self.aid)
         self.assertEqual(self.callback(self.event('绑定班级 '+code,group=True)).status_code,200)
@@ -447,17 +432,15 @@ class ClassBot(fixtures.WebCase):
         self.store.delete_account(self.u1,self.aid)
         self.assertEqual(self.support.data.cadre(self.aid),{})
         with self.store.db() as db:self.assertEqual(db.execute('SELECT count(*) FROM web_support_tokens').fetchone()[0],0)
-    def test_personal_2310_is_opt_in_and_truthful(self):
+    def test_legacy_personal_reminder_settings_no_longer_send_at_2310(self):
         self.support.data.put('cadre:'+self.aid,{**self.config,'group_reminders':False},account_id=self.aid)
         self.support.data.put('reminder:'+str(self.u1['id']),{'enabled':True,'openid':'synthetic-person','consent_version':'2026-10-26-qq-v1'},user_id=self.u1['id'])
-        self.instant=self.instant.replace(hour=23,minute=10);self.school.today_status='PENDING'
-        for _ in range(2):self.support.next_poll=0;self.support.tick()
-        self.assertEqual(len(self.qq.messages),1);self.assertEqual(self.qq.messages[0][0],'user');self.assertIn('尚未记录',self.qq.messages[0][2]);self.assertEqual(self.school.posts,[])
-    def test_stop_command_only_disables_the_matching_person(self):
-        for user,openid in ((self.u1,'synthetic-person'),(self.u2,'synthetic-other-person')):
-            self.support.data.put('reminder:'+str(user['id']),{'enabled':True,'openid':openid},user_id=user['id'])
+        self.instant=self.instant.replace(hour=23,minute=10);self.support.next_poll=0;self.support.tick()
+        self.assertEqual(self.qq.messages,[]);self.assertEqual(self.school.posts,[])
+    def test_stop_command_only_disables_the_connected_operator(self):
+        self.support.data.put('qq_operator',{'enabled':True,'openid':'synthetic-person','not_before':0})
         self.callback(self.event('取消提醒'))
-        self.assertFalse(self.support.data.reminder(self.u1['id'])['enabled']);self.assertTrue(self.support.data.reminder(self.u2['id'])['enabled'])
+        self.assertFalse(self.support.data.get('qq_operator')['enabled'])
     def test_remark_is_truthful_dated_and_unique_each_day(self):
         values=[daily_remark((dt.date(2026,10,26)+dt.timedelta(days=i)).isoformat()) for i in range(60)]
         self.assertEqual(len(set(values)),60)
@@ -479,14 +462,6 @@ class ClassBot(fixtures.WebCase):
                 self.support.data.put('cadre:'+self.aid,{**self.config,'group_reminders':False},account_id=self.aid)
             return result
         self.school.api=changed;self.support.remind_class(self.aid,DAY);self.assertEqual(self.qq.messages,[])
-    def test_disabling_personal_reminder_during_read_prevents_delivery(self):
-        self.instant=self.instant.replace(hour=23,minute=10)
-        self.support.data.put('reminder:'+str(self.u1['id']),{'enabled':True,'openid':'synthetic-person','consent_version':'2026-10-26-qq-v1'},user_id=self.u1['id'])
-        original=self.school.today
-        def changed():
-            value=self.support.data.reminder(self.u1['id']);value['enabled']=False
-            self.support.data.put('reminder:'+str(self.u1['id']),value,user_id=self.u1['id']);return original()
-        self.school.today=changed;self.support.remind_person(self.u1['id'],DAY);self.assertEqual(self.qq.messages,[])
     def test_delayed_or_old_day_reminders_do_not_send(self):
         self.support.remind_class(self.aid,DAY)
         self.instant=self.instant.replace(hour=23,minute=17);self.support.remind_class(self.aid,DAY)
