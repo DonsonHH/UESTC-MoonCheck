@@ -193,7 +193,7 @@ def create_app(directory,public_url,*,allow_http=False,start_worker=False,runner
     from .qq_bot import QQError
     @app.errorhandler(QQError)
     def qq_error(error):
-        messages={40034143:'QQ 要求机器人拥有群管理员身份，才能 @全体成员。',40034105:'请群主开启机器人的主动发言权限。'}
+        messages={40034142:'QQ 的 @全体成员次数已达上限，本次未触发 @全体。',40034143:'QQ 要求机器人拥有群管理员身份，才能 @全体成员。',40034105:'请群主开启机器人的主动发言权限。'}
         return jsonify({'ok':False,'error':{'code':'qq_delivery_failed','message':messages.get(error.code,'QQ 未确认本次操作，请检查机器人与群的消息权限。'),'platform_code':error.code}}),502
 
     @app.errorhandler(ToolError)
@@ -275,7 +275,8 @@ def create_app(directory,public_url,*,allow_http=False,start_worker=False,runner
         config=support.data.cadre(account_id)
         target=(support.data.get('qq_test_destination') if value.get('test') else config).get('group_openid')
         if not target:raise WebError(409,'group_not_bound','请先绑定所选群。')
-        support.client_for_bot().send('group',target,'<qqbot-at-everyone /> 晚安成电连接测试：验证 @全体与主动发送权限，不包含真实班级签到名单。')
+        message='<qqbot-at-everyone /> 晚安成电测试群连接测试：不包含真实班级签到名单。' if value.get('test') else '晚安成电：正式群连接检查成功。此测试不触发 @全体，保留额度用于23:10提醒；不包含真实签到名单。'
+        support.client_for_bot().send('group',target,message)
         return response_ok({'sent':True})
 
     @app.get('/api/notice')

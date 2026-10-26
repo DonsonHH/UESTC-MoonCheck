@@ -201,6 +201,17 @@ class SupportManager:
         if not fresh:return
         try:self.client_for_bot().send('group' if kind=='group_reminder' else 'user',target,text)
         except QQError as error:
+            if kind=='group_reminder' and error.code==40034142 and '<qqbot-at-everyone />' in text:
+                # An explicit quota rejection means no first message was sent.
+                # Preserve useful delivery without claiming an @everyone worked.
+                current=self.data.cadre(account_id) if account_id else {}
+                if not self.reminder_window(day) or not current.get('group_reminders') or current.get('group_openid')!=target or self.data.get('qq_test_destination').get('group_openid')==target or not self.data.get('qq_bot').get('enabled'):
+                    self.data.finish(ident,{'result':'reminder_cancelled','all_mention_code':40034142});return 'cancelled'
+                fallback='【签到提醒｜本次 @全体额度不足】\n以下为未签到名单；本条不触发 @全体。\n\n'+text.replace('<qqbot-at-everyone />','',1).lstrip()
+                try:self.client_for_bot().send('group',target,fallback)
+                except QQError as second:
+                    self.data.finish(ident,{'result':'notification_failed','code':second.code,'httpStatus':second.http,'all_mention_code':40034142,'fallback_attempted':True},'failed');return 'failed'
+                self.data.finish(ident,{'result':'notification_sent_without_mention','all_mention_code':40034142,'mentions_everyone':False});return 'sent_without_mention'
             self.data.finish(ident,{'result':'notification_failed','code':error.code,'httpStatus':error.http},'failed');return 'failed'
         self.data.finish(ident,{'result':'notification_sent'});return 'sent'
     def remind_class(self,account_id,day):

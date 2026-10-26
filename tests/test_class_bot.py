@@ -185,6 +185,34 @@ class ClassBot(fixtures.WebCase):
         for _ in range(3):self.support.next_poll=0;self.support.tick()
         self.assertEqual(len(self.qq.messages),1);self.assertEqual(self.school.posts,[])
         self.assertTrue(any(r['state']=='failed' for r in self.support.data.runs(self.aid)))
+    def test_at_all_quota_sends_labeled_roster_once_without_faking_mention_success(self):
+        self.instant=self.instant.replace(hour=23,minute=10)
+        original=self.qq.send
+        def quota(kind,target,text,**values):
+            if '<qqbot-at-everyone />' in text:
+                self.qq.messages.append((kind,target,text,values));raise QQError(40034142,400)
+            return original(kind,target,text,**values)
+        self.qq.send=quota
+        self.support.next_poll=0;self.support.tick();self.support.next_poll=0;self.support.tick()
+        self.assertEqual(len(self.qq.messages),2,'One rejected mention then one clearly labeled roster, without repeat delivery')
+        fallback=self.qq.messages[1][2]
+        self.assertNotIn('<qqbot-at-everyone />',fallback);self.assertIn('@全体额度不足',fallback)
+        self.assertIn(TARGET,fallback)
+        run=next(r for r in self.support.data.runs(self.aid) if r['kind']=='group_reminder')
+        self.assertEqual(run['result']['result'],'notification_sent_without_mention')
+        self.assertEqual(run['result']['all_mention_code'],40034142)
+    def test_group_pause_after_quota_rejection_cancels_fallback(self):
+        self.instant=self.instant.replace(hour=23,minute=10)
+        def paused(kind,target,text,**values):
+            self.qq.messages.append((kind,target,text,values))
+            self.support.data.put('cadre:'+self.aid,{**self.config,'group_reminders':False},account_id=self.aid)
+            raise QQError(40034142,400)
+        self.qq.send=paused;self.support.remind_class(self.aid,DAY)
+        self.assertEqual(len(self.qq.messages),1)
+    def test_formal_connection_test_preserves_all_mention_quota(self):
+        response=self.req(self.ac,self.at,'/api/class/'+self.aid+'/test-message','POST',{'confirm':True,'test':False})
+        self.assertEqual(response.status_code,200,response.json)
+        self.assertEqual(len(self.qq.messages),1);self.assertNotIn('<qqbot-at-everyone />',self.qq.messages[0][2])
     def test_no_qq_binding_means_no_personal_messages_and_disabled_by_default(self):
         response=self.req(self.c1,self.t1,'/api/qq/reminder');self.assertFalse(response.json['enabled']);self.assertFalse(response.json['linked'])
         self.assertEqual(self.req(self.c1,self.t1,'/api/qq/reminder','PATCH',{'enabled':True,'consent_version':'2026-10-26-qq-v1'}).status_code,409)
