@@ -1,5 +1,5 @@
 import React,{useEffect,useState} from 'react';
-import {Bell,Check,Copy,LoaderCircle,RefreshCw,Send,Users} from 'lucide-react';
+import {ArrowLeft,ArrowRight,Bell,Check,Copy,LoaderCircle,RefreshCw,Send,Users} from 'lucide-react';
 import {toast} from 'sonner';
 
 type Request=(path:string,method?:string,body?:unknown)=>Promise<any>;
@@ -10,12 +10,21 @@ function Failure({error}:{error:string}){return error?<p className="inline-error
 function Busy({busy}:{busy:boolean}){return busy?<LoaderCircle size={16} className="spin"/>:null}
 async function copy(value:string){try{await navigator.clipboard.writeText(value);toast.success('已复制')}catch{toast.error('请选中文字后复制')}}
 
-export function QQReminders({request}:{request:Request}){
+type ReminderSummary={linked:boolean;enabled:boolean;available:boolean;last_status?:string;consent_version:string};
+export function QQConnection({request,onManage,refreshKey=0}:{request:Request;onManage:()=>void;refreshKey?:number}){
+ const[value,setValue]=useState<ReminderSummary|null>(null),[failed,setFailed]=useState(false);
+ useEffect(()=>{let live=true;setFailed(false);request('/api/qq/reminder').then(v=>{if(live)setValue(v)}).catch(()=>{if(live)setFailed(true)});return()=>{live=false}},[request,refreshKey]);
+ const active=!!value?.linked&&value.enabled&&value.available&&!failed;
+ const status=failed?'读取失败':!value?'读取中':!value.available?'暂不可用':!value.linked?'未绑定':value.enabled?'已开启':'未开启';
+ return <div className="connection-row qq-connection-row" aria-labelledby="qq-connection-title"><span className="connection-icon" aria-hidden="true"><Bell size={21}/></span><div><h3 id="qq-connection-title">QQ 提醒 <span className="connection-optional">可选</span></h3><p>{failed?'状态暂未读取，可进入设置后重试。':'每天 23:10 接收本人的签到结果，可随时关闭。'}</p></div><span className={'status-label '+(active?'good':'')} role="status">{active&&<Check size={15}/>} {status}</span><button className="button" onClick={onManage}>设置提醒<ArrowRight size={16}/></button></div>;
+}
+
+export function QQReminders({request,onBack}:{request:Request;onBack?:()=>void}){
  const[value,setValue]=useState<any>(null),[enabled,setEnabled]=useState(false),[accepted,setAccepted]=useState(false),[code,setCode]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState(''),[remove,setRemove]=useState(false);
  async function load(){setBusy(true);setError('');try{const v=await request('/api/qq/reminder');setValue(v);setEnabled(v.enabled)}catch(e){setError((e as Error).message)}finally{setBusy(false)}}
  useEffect(()=>{load()},[]);
  async function save(){setBusy(true);setError('');try{const v=await request('/api/qq/reminder','PATCH',{enabled,consent_version:accepted?value.consent_version:undefined});setValue(v);setEnabled(v.enabled);toast.success('QQ 提醒设置已保存')}catch(e){setError((e as Error).message)}finally{setBusy(false)}}
- return <section className="panel support-panel"><div className="panel-title"><h2><Bell size={19}/>每日 QQ 提醒</h2><button className="text-link" disabled={busy} onClick={load}><RefreshCw size={16}/>刷新连接</button></div><div className="support-body">
+ return <div className="connection-workspace qq-reminder-workspace">{onBack&&<button className="text-link qq-reminder-back" onClick={onBack}><ArrowLeft size={16}/>返回账号连接</button>}<section className="panel support-panel"><div className="panel-title"><h2><Bell size={19}/>每日 QQ 提醒</h2><button className="text-link" disabled={busy} onClick={load}><RefreshCw size={16}/>刷新连接</button></div><div className="support-body">
   <p>每天北京时间 23:10 核对你本人的学校记录，发送签到结果或待处理提醒。默认关闭，可以随时取消。</p><Failure error={error}/>
   {!value?<p role="status">正在读取…</p>:<><p className="support-status">{value.linked?'QQ 已绑定':'QQ 尚未绑定'} · {value.enabled?'提醒已开启':'提醒已关闭'}{value.last_status==='failed'?' · 上次消息未送达，请检查 QQ 的主动消息开关':''}</p>
   {!value.available&&<p className="field-note">机器人暂未启用，设置会保留。</p>}
@@ -25,7 +34,7 @@ export function QQReminders({request}:{request:Request}){
   {enabled&&!value.enabled&&<label className="student-check"><input type="checkbox" checked={accepted} onChange={e=>setAccepted(e.target.checked)}/><span>我同意加密保存机器人身份标识，用于向我发送本人学校签到状态。提醒不改变学校记录，可在此关闭或向机器人发送“取消提醒”。请在 QQ 中允许机器人主动发送消息。</span></label>}
   <button className="button primary" disabled={busy||enabled&&!value.enabled&&!accepted} onClick={save}><Busy busy={busy}/>保存提醒设置</button>
   {remove&&<div className="remove-confirm"><p>解除绑定会关闭提醒，学校账号和每日计划保留。</p><button className="button danger-button" disabled={busy} onClick={async()=>{setBusy(true);try{const v=await request('/api/qq/reminder','PATCH',{enabled:false,unbind:true});setValue(v);setEnabled(false);setCode('');setRemove(false)}catch(e){setError((e as Error).message)}finally{setBusy(false)}}}>确认解除</button><button className="button" onClick={()=>setRemove(false)}>保留绑定</button></div>}</>}
- </div></section>;
+ </div></section></div>;
 }
 
 type Account={id:string;student_id:string;owner_name:string};
