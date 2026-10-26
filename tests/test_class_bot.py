@@ -209,6 +209,23 @@ class ClassBot(fixtures.WebCase):
             raise QQError(40034142,400)
         self.qq.send=paused;self.support.remind_class(self.aid,DAY)
         self.assertEqual(len(self.qq.messages),1)
+    def test_nightly_check_pause_while_reading_cancels_message(self):
+        self.instant=self.instant.replace(hour=23,minute=10);original=self.school.api
+        def paused(path,**values):
+            result=original(path,**values)
+            if path.startswith('/class-cadre/checkin-list'):
+                self.support.data.put('cadre:'+self.aid,{**self.config,'nightly_check':False},account_id=self.aid)
+            return result
+        self.school.api=paused;self.support.remind_class(self.aid,DAY)
+        self.assertEqual(self.qq.messages,[])
+    def test_changed_class_after_quota_rejection_cannot_send_old_roster(self):
+        self.instant=self.instant.replace(hour=23,minute=10)
+        def changed(kind,target,text,**values):
+            self.qq.messages.append((kind,target,text,values))
+            self.support.data.put('cadre:'+self.aid,{**self.config,'class_key':'synthetic-other-class'},account_id=self.aid)
+            raise QQError(40034142,400)
+        self.qq.send=changed;self.support.remind_class(self.aid,DAY)
+        self.assertEqual(len(self.qq.messages),1)
     def test_formal_connection_test_preserves_all_mention_quota(self):
         response=self.req(self.ac,self.at,'/api/class/'+self.aid+'/test-message','POST',{'confirm':True,'test':False})
         self.assertEqual(response.status_code,200,response.json)

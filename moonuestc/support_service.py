@@ -196,7 +196,7 @@ class SupportManager:
                 'already_recorded':sum(r['result']=='already_recorded' for r in results),'unconfirmed':sum(r['result']=='submission_unknown' for r in results)})
             return results
         except ToolError as error:self.data.finish(ident,{'result':'class_failed','reason':error.reason},'failed')
-    def send_once(self,scope,kind,day,target,text,account_id=None):
+    def send_once(self,scope,kind,day,target,text,account_id=None,*,class_key=None):
         ident,fresh,_=self.data.begin(scope,kind,day,account_id=account_id,initial={'result':'delivery_unknown'})
         if not fresh:return
         try:self.client_for_bot().send('group' if kind=='group_reminder' else 'user',target,text)
@@ -205,7 +205,7 @@ class SupportManager:
                 # An explicit quota rejection means no first message was sent.
                 # Preserve useful delivery without claiming an @everyone worked.
                 current=self.data.cadre(account_id) if account_id else {}
-                if not self.reminder_window(day) or not current.get('group_reminders') or current.get('group_openid')!=target or self.data.get('qq_test_destination').get('group_openid')==target or not self.data.get('qq_bot').get('enabled'):
+                if not self.reminder_window(day) or not current.get('nightly_check',True) or not current.get('group_reminders') or current.get('group_openid')!=target or class_key is not None and current.get('class_key')!=class_key or self.data.get('qq_test_destination').get('group_openid')==target or not self.data.get('qq_bot').get('enabled'):
                     self.data.finish(ident,{'result':'reminder_cancelled','all_mention_code':40034142});return 'cancelled'
                 fallback='【签到提醒｜本次 @全体额度不足】\n以下为未签到名单；本条不触发 @全体。\n\n'+text.replace('<qqbot-at-everyone />','',1).lstrip()
                 try:self.client_for_bot().send('group',target,fallback)
@@ -230,8 +230,8 @@ class SupportManager:
             latest=self.data.cadre(account_id)
             state='disabled'
             test_group=self.data.get('qq_test_destination').get('group_openid')
-            if self.data.get('qq_bot').get('enabled') and latest.get('group_reminders') and latest.get('group_openid') and latest.get('group_openid')!=test_group and latest.get('group_openid')==config.get('group_openid') and latest.get('class_key')==config['class_key']:
-                state=self.send_once(account_id,'group_reminder',day,config['group_openid'],group_message(day,pending),account_id)
+            if self.data.get('qq_bot').get('enabled') and latest.get('nightly_check',True) and latest.get('group_reminders') and latest.get('group_openid') and latest.get('group_openid')!=test_group and latest.get('group_openid')==config.get('group_openid') and latest.get('class_key')==config['class_key']:
+                state=self.send_once(account_id,'group_reminder',day,config['group_openid'],group_message(day,pending),account_id,class_key=config['class_key'])
             self.data.finish(ident,{'result':'class_checked','total':len(rows),'pending':len(pending),'delivery':state})
         except ToolError as error:
             self.data.finish(ident,{'result':'class_read_failed','reason':error.reason},'failed')
