@@ -72,13 +72,14 @@ class SupportManager:
     def configure_class(self,actor,account_id,data):
         if actor['role']!='admin':raise WebError(403,'admin_required','班级自动填报由管理员配置。')
         self.data.owner(actor,account_id,require_cadre=False)
-        allowed={'class_key','targets','report_enabled','group_reminders','opening_reminder','nightly_check','members','group_openid','if_match'}
+        allowed={'class_key','targets','report_enabled','report_trigger','group_reminders','opening_reminder','nightly_check','members','group_openid','if_match'}
         if not isinstance(data,dict) or set(data)-allowed:raise WebError(400,'invalid_fields','班级参数不正确。')
         current=self.data.cadre(account_id)
         expected=data.get('if_match',self.class_revision(current))
         if expected!=self.class_revision(current):raise WebError(409,'class_configuration_changed','班级设置已更新，请刷新后再保存。')
         data={k:v for k,v in data.items() if k!='if_match'}
         value={**{'targets':[],'report_enabled':False,'group_reminders':False,'opening_reminder':False,'nightly_check':True,'members':{},'group_openid':''},**current,**copy.deepcopy(data)}
+        if value.get('report_trigger','after_self') not in ('after_self','23:05'):raise WebError(400,'invalid_report_trigger','请选择支持的情况登记时间。')
         if any(type(value.get(k)) is not bool for k in ('report_enabled','group_reminders','opening_reminder','nightly_check')):raise WebError(400,'invalid_fields','开关参数不正确。')
         if not isinstance(value.get('class_key'),str) or not isinstance(value['targets'],list) or len(value['targets'])>100 or not all(isinstance(s,str) and re.fullmatch('[0-9]{8,20}',s) for s in value['targets']):raise WebError(400,'invalid_class_targets','请选择班级中的学生。')
         if not isinstance(value['members'],dict) or len(value['members'])>300:raise WebError(400,'invalid_members','QQ 映射不正确。')
@@ -90,7 +91,9 @@ class SupportManager:
         with self.session(account_id,allow_login=False) as school:
             classes=school.classes();rows=school.roster(value['class_key'],self.clock().date().isoformat())
             roster={r['student_id']:r for r in rows}
-            if not set(value['targets'])<=set(roster) or not set(value['members'])<=set(roster):raise WebError(400,'class_target_not_found','学生不在此账号有权管理的班级。')
+            existing=set(current.get('targets',[])) if current.get('class_key')==value['class_key'] else set()
+            previous_members=set(current.get('members',{})) if current.get('class_key')==value['class_key'] else set()
+            if not set(value['targets'])<=set(roster)|existing or not set(value['members'])<=set(roster)|previous_members:raise WebError(400,'class_target_not_found','学生不在此账号有权管理的班级。')
             if value['report_enabled']:school.study_option()
         value['class_name']=next(r['name'] for r in classes if r['class_key']==value['class_key'])
         with self.store.db(True) as db:
@@ -159,13 +162,15 @@ class SupportManager:
     def after_job(self,job,result):
         if job['mode']=='checkin' and job['source']=='schedule' and result.get('result') in ('confirmed','already_recorded'):
             config=self.data.cadre(job['account_id'])
-            if config.get('report_enabled') and config.get('targets'):
+            if config.get('report_enabled') and config.get('targets') and config.get('report_trigger','after_self')=='after_self':
                 self.submit('class:'+job['account_id'],lambda:self.report_class(job['account_id'],job['business_date']))
-    def report_allowed(self,account_id,class_key,student=None):
+    def report_allowed(self,account_id,class_key,student=None,*,trigger=None):
         config=self.data.cadre(account_id)
         with self.store.db() as db:
             row=db.execute('SELECT a.enabled,a.automatic,a.owner_id,u.active,u.role FROM web_accounts a JOIN web_users u ON u.id=a.owner_id WHERE a.id=?',(account_id,)).fetchone()
-        if not row or not row['enabled'] or not row['automatic'] or not row['active'] or not config.get('report_enabled') or config.get('class_key')!=class_key or student is not None and student not in config.get('targets',[]):
+        independent=config.get('report_trigger')=='23:05'
+        if trigger is not None and config.get('report_trigger','after_self')!=trigger:raise ToolError('class_configuration_changed','class_report')
+        if not row or not row['enabled'] or not independent and not row['automatic'] or not row['active'] or not config.get('report_enabled') or config.get('class_key')!=class_key or student is not None and student not in config.get('targets',[]) or independent and not '23:05'<=self.clock().strftime('%H:%M')<'23:10':
             raise ToolError('class_configuration_changed','class_report')
         if self.store.require_notice and not self.store.notice_accepted({'id':row['owner_id'],'role':row['role']}):raise ToolError('privacy_consent_required','class_report')
     def report_class(self,account_id,day):
@@ -174,10 +179,14 @@ class SupportManager:
         if not bounds[0]<=self.clock().strftime('%H:%M')<=bounds[1]:return
         config=self.data.cadre(account_id)
         if not config.get('report_enabled') or not config.get('targets'):return
-        # The bundle is only driven by a school-confirmed scheduled self-job.
-        with self.store.db() as db:
-            job=db.execute("SELECT result FROM web_jobs WHERE account_id=? AND business_date=? AND source='schedule' AND mode='checkin' AND state='done'",(account_id,day)).fetchone()
-        if not job or (json.loads(job['result']) if job['result'] else {}).get('result') not in ('confirmed','already_recorded'):return
+        independent=config.get('report_trigger')=='23:05'
+        if independent:
+            if not '23:05'<=self.clock().strftime('%H:%M')<'23:10':return
+        else:
+            # Default bundles still require a confirmed scheduled personal job.
+            with self.store.db() as db:
+                job=db.execute("SELECT result FROM web_jobs WHERE account_id=? AND business_date=? AND source='schedule' AND mode='checkin' AND state='done'",(account_id,day)).fetchone()
+            if not job or (json.loads(job['result']) if job['result'] else {}).get('result') not in ('confirmed','already_recorded'):return
         ident,fresh,_=self.data.begin(account_id,'class_bundle',day,account_id=account_id)
         if not fresh:return
         try:
@@ -187,11 +196,11 @@ class SupportManager:
                 for student in config['targets']:
                     # Recheck settings before every side effect; pause/removal takes effect.
                     latest=self.data.cadre(account_id)
-                    if not latest.get('report_enabled') or latest.get('class_key')!=config['class_key'] or student not in latest.get('targets',[]):break
+                    if not latest.get('report_enabled') or latest.get('class_key')!=config['class_key'] or student not in latest.get('targets',[]) or latest.get('report_trigger','after_self')!=config.get('report_trigger','after_self'):break
                     results.append(school.report(config['class_key'],student,day,self.data,account_id,self.store.execution_window,
-                        before_submit=lambda student=student:self.report_allowed(account_id,config['class_key'],student)))
+                        before_submit=lambda student=student:self.report_allowed(account_id,config['class_key'],student,trigger=config.get('report_trigger','after_self'))))
             self.data.finish(ident,{'result':'class_processed','targets':len(results),'reported':sum(r['result']=='class_reported' for r in results),
-                'already_recorded':sum(r['result']=='already_recorded' for r in results),'unconfirmed':sum(r['result']=='submission_unknown' for r in results)})
+                'already_recorded':sum(r['result']=='already_recorded' for r in results),'not_pending':sum(r['result']=='not_pending' for r in results),'unconfirmed':sum(r['result']=='submission_unknown' for r in results)})
             return results
         except ToolError as error:self.data.finish(ident,{'result':'class_failed','reason':error.reason},'failed')
     def group_delivery_allowed(self,account_id,day,target,kind,*,class_key=None):
@@ -282,7 +291,9 @@ class SupportManager:
             if self.store.require_notice and not self.store.notice_accepted({'id':row['owner_id'],'role':row['role']}):continue
             if '21:05'<=clock<'21:11' and config.get('opening_reminder',False):
                 self.submit('opening:'+row['id'],lambda aid=row['id']:self.remind_opening(aid,day))
-            if config.get('report_enabled') and '21:06'<=clock<='23:24':
+            if config.get('report_enabled') and config.get('report_trigger')=='23:05' and '23:05'<=clock<'23:10':
+                self.submit('class:'+row['id'],lambda aid=row['id']:self.report_class(aid,day))
+            elif config.get('report_enabled') and config.get('report_trigger','after_self')=='after_self' and '21:06'<=clock<='23:24':
                 # Recheck-only calls are bounded to once per minute after restart.
                 with self.store.db() as db:
                     own=db.execute("SELECT result FROM web_jobs WHERE account_id=? AND business_date=? AND source='schedule' AND mode='checkin' AND state='done'",(row['id'],day)).fetchone()

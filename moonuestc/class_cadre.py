@@ -64,6 +64,7 @@ class CadreSchool:
     def report(self,class_key,student_id,day,ledger,account_id,bounds,*,before_submit=lambda:None):
         self.check_window(day,bounds)
         target=[r for r in self.roster(class_key,day) if r['student_id']==student_id]
+        if not target:return {'result':'not_pending','status':'NOT_IN_PENDING_LIST'}
         if len(target)!=1:raise ToolError('class_target_not_found','class_report')
         target=target[0]
         if target['status'] in TERMINAL:return {'result':'already_recorded','status':target['status']}

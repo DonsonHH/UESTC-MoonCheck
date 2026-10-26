@@ -122,6 +122,54 @@ class ClassBot(fixtures.WebCase):
         self.assertEqual(response.status_code,403);self.assertEqual(self.sessions,0)
     def test_report_requires_confirmed_scheduled_self_job(self):
         self.support.report_class(self.aid,DAY);self.assertEqual(self.school.posts,[]);self.assertEqual(self.sessions,0)
+    def independent_report(self):
+        self.support.data.put('cadre:'+self.aid,{**self.config,'report_trigger':'23:05'},account_id=self.aid)
+    def test_independent_report_runs_at_2305_without_parent_job_or_personal_automation(self):
+        self.independent_report()
+        self.instant=self.instant.replace(hour=23,minute=4)
+        self.support.next_poll=0;self.support.tick();self.assertEqual(self.school.posts,[])
+        with self.store.db(True) as db:db.execute('UPDATE web_accounts SET automatic=0 WHERE id=?',(self.aid,))
+        self.instant=self.instant.replace(minute=5)
+        for _ in range(3):self.support.next_poll=0;self.support.tick()
+        self.assertEqual(len(self.school.posts),1);self.assertEqual(self.school.posts[0][0]['recordId'],'synthetic-record-99')
+        self.assertEqual(self.qq.messages,[])
+        with self.store.db() as db:self.assertEqual(db.execute('SELECT count(*) FROM web_jobs').fetchone()[0],0)
+    def test_independent_report_never_follows_early_self_job_or_runs_late(self):
+        self.independent_report();job=self.parent_job()
+        self.support.after_job(job,{'result':'confirmed'});self.support.report_class(self.aid,DAY)
+        self.assertEqual(self.school.posts,[])
+        self.instant=self.instant.replace(hour=23,minute=10);self.support.report_class(self.aid,DAY)
+        self.assertEqual(self.school.posts,[])
+    def test_independent_report_restart_or_timeout_never_reposts(self):
+        from moonuestc.support_service import SupportManager
+        self.independent_report();self.instant=self.instant.replace(hour=23,minute=5);self.school.failure='timeout'
+        self.support.next_poll=0;self.support.tick()
+        restarted=SupportManager(self.store,background=False,clock=lambda:self.instant,session_factory=self.support.session_factory,qq_factory=lambda config:self.qq)
+        try:restarted.tick()
+        finally:restarted.close()
+        self.assertEqual(len(self.school.posts),1)
+    def test_independent_report_skips_target_absent_from_pending_only_list(self):
+        self.independent_report();self.instant=self.instant.replace(hour=23,minute=5);self.school.rows=self.school.rows[1:]
+        self.support.next_poll=0;self.support.tick()
+        self.assertEqual(self.school.posts,[])
+        bundle=next(r for r in self.support.data.runs(self.aid) if r['kind']=='class_bundle')
+        self.assertEqual(bundle['result'].get('not_pending'),1)
+    def test_independent_report_pause_still_blocks_write(self):
+        self.independent_report();self.instant=self.instant.replace(hour=23,minute=5);original=self.school.api
+        def pause(path,**values):
+            result=original(path,**values)
+            if path.startswith('/case-keyword/'):
+                saved=self.support.data.cadre(self.aid);saved['report_enabled']=False
+                self.support.data.put('cadre:'+self.aid,saved,account_id=self.aid)
+            return result
+        self.school.api=pause;self.support.next_poll=0;self.support.tick()
+        self.assertEqual(self.school.posts,[])
+    def test_admin_can_keep_existing_target_after_it_leaves_pending_list(self):
+        self.school.rows=self.school.rows[1:]
+        response=self.req(self.ac,self.at,'/api/class/'+self.aid,'PATCH',{'report_trigger':'23:05'})
+        self.assertEqual(response.status_code,200,response.json)
+        self.assertEqual(self.support.data.cadre(self.aid)['targets'],[TARGET])
+        self.assertEqual(self.req(self.ac,self.at,'/api/class/'+self.aid,'PATCH',{'report_trigger':'23:00'}).status_code,400)
     def test_report_waits_for_time_then_records_only_selected_student_once(self):
         self.parent_job();self.instant=self.instant.replace(hour=20)
         self.support.report_class(self.aid,DAY);self.assertEqual(self.school.posts,[])
