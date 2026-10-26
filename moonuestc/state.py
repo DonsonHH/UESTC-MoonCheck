@@ -70,6 +70,9 @@ class State:
             CREATE TABLE IF NOT EXISTS logins (
                 account TEXT, day TEXT, count INTEGER NOT NULL,
                 PRIMARY KEY (account, day));
+            CREATE TABLE IF NOT EXISTS verified_login_counts (
+                account TEXT,day TEXT,count INTEGER NOT NULL,
+                PRIMARY KEY (account,day));
             CREATE TABLE IF NOT EXISTS readiness (account TEXT PRIMARY KEY);
             CREATE TABLE IF NOT EXISTS auth_recovery (
                 account TEXT PRIMARY KEY,reason TEXT NOT NULL,required_at REAL NOT NULL);
@@ -107,7 +110,8 @@ class State:
         """One owner-operated flow per permit, including its final identity check.
 
         This rolling local guard is deliberately separate from the historical
-        unattended three-per-day password retry guard in logins.
+        unattended consecutive-unconfirmed password retry guard. Raw daily
+        totals remain in logins for audit.
         """
         stamp=time.time();token=secrets.token_urlsafe(32)
         with self.db:
@@ -143,8 +147,19 @@ class State:
         return row[0] if row else None
 
     def login_exhausted(self,account,day):
-        row=self.db.execute('SELECT count FROM logins WHERE account=? AND day=?',(account,day)).fetchone()
+        row=self.db.execute('SELECT l.count-coalesce(v.count,0) FROM logins l LEFT JOIN verified_login_counts v ON v.account=l.account AND v.day=l.day WHERE l.account=? AND l.day=?',(account,day)).fetchone()
         return bool(row and row[0]>=3)
+
+    def background_session_verified(self,account,day):
+        """Checkpoint verified success; keep raw attempts and school challenges."""
+        with self.db:
+            self.db.execute('BEGIN IMMEDIATE')
+            reason=self.auth_requirement(account)
+            if reason and reason!='daily_login_limit':return False
+            count=self.db.execute('SELECT count FROM logins WHERE account=? AND day=?',(account,day)).fetchone()
+            self.db.execute('INSERT INTO verified_login_counts VALUES(?,?,?) ON CONFLICT(account,day) DO UPDATE SET count=excluded.count',(account,day,count[0] if count else 0))
+            if reason=='daily_login_limit':self.db.execute('DELETE FROM auth_recovery WHERE account=? AND reason=?',(account,'daily_login_limit'))
+        return True
 
     def check_unattended_login(self,account,day):
         reason=self.auth_requirement(account)
@@ -160,6 +175,7 @@ class State:
         with self.db:
             self.db.execute('DELETE FROM auth_recovery WHERE account=?',(account,))
             self.db.execute('DELETE FROM logins WHERE account=? AND day=?',(account,day))
+            self.db.execute('DELETE FROM verified_login_counts WHERE account=? AND day=?',(account,day))
 
     def claim(self, account, day, submission=None):
         with self.db:

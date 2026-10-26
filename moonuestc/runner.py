@@ -121,6 +121,7 @@ def run_account(account, mode, state, directory, *, clock=now, sleep=time.sleep,
         instant = clock()
         day = instant.date().isoformat()
         status = valid_today(data, instant)
+        if not restricted:state.background_session_verified(key,day)
         emit("record_read", businessDate=day, status=status, abnormalFlag=data.get("abnormalFlag"))
         if mode == "diagnose":
             win = window(school.schedule(), clock())
