@@ -352,6 +352,27 @@ class ClassBot(fixtures.WebCase):
         self.assertEqual(self.callback(self.event('绑定班级 '+code,group=True)).status_code,200)
         self.assertEqual(self.support.data.cadre(self.aid)['group_openid'],'synthetic-group')
         self.assertFalse(self.support.data.bind_code(code,{'kind':'group','target':'another-group','sender':'another-member'}))
+    def test_binding_group_preserves_reminder_switches_including_paused_nightly(self):
+        for index,nightly in enumerate((False,True)):
+            configured={**self.config,'group_openid':'','group_reminders':nightly,'opening_reminder':False,'nightly_check':False}
+            self.support.data.put('cadre:'+self.aid,configured,account_id=self.aid)
+            response=self.req(self.ac,self.at,'/api/class/'+self.aid+'/group-binding','POST',{})
+            self.assertEqual(response.status_code,200,response.json)
+            self.callback(self.event('绑定班级 '+response.json['code'],group=True,ident='synthetic-preserve-binding-'+str(index)))
+            saved=self.support.data.cadre(self.aid)
+            self.assertEqual(saved['group_openid'],'synthetic-group')
+            for flag in ('group_reminders','opening_reminder','nightly_check','report_enabled'):
+                self.assertEqual(saved[flag],configured[flag],flag+' must be preserved by binding')
+    def test_admin_roster_and_settings_do_not_allow_password_login(self):
+        original=self.support.session_factory;options=[]
+        def recording(store,aid,**values):
+            options.append(values.get('allow_login',True));return original(store,aid,**values)
+        self.support.session_factory=recording
+        response=self.req(self.ac,self.at,'/api/class/'+self.aid)
+        self.assertEqual(response.status_code,200,response.json)
+        response=self.req(self.ac,self.at,'/api/class/'+self.aid,'PATCH',{'opening_reminder':True})
+        self.assertEqual(response.status_code,200,response.json)
+        self.assertEqual(options,[False,False],'Admin read/save may reuse school cookies but cannot submit passwords')
     def test_signature_tampering_stale_signature_and_duplicates(self):
         event=self.event('身份',group=True)
         self.assertEqual(self.callback(event,tamper=True).status_code,403)
@@ -428,8 +449,30 @@ class ClassBot(fixtures.WebCase):
         transport=Mock();school=Mock();school.connect.side_effect=ToolError('timeout','portal_warmup')
         with patch('moonuestc.class_cadre.EncryptedTransport',return_value=transport),patch('moonuestc.class_cadre.School',return_value=school):
             with self.assertRaises(ToolError):
-                with school_session(self.store,self.aid,clock=lambda:self.instant):self.fail('Failed login cannot yield a school session')
+                with school_session(self.store,self.aid,clock=lambda:self.instant,allow_login=True):self.fail('Failed login cannot yield a school session')
         transport.save.assert_called_once()
+    def test_readonly_school_session_never_connects_or_consumes_login_budget(self):
+        from unittest.mock import Mock
+        transport=Mock();school=Mock()
+        with patch('moonuestc.class_cadre.EncryptedTransport',return_value=transport),patch('moonuestc.class_cadre.School',return_value=school):
+            with school_session(self.store,self.aid,clock=lambda:self.instant,allow_login=False):pass
+        school.enter.assert_called_once();school.connect.assert_not_called();transport.save.assert_called_once()
+    def test_expired_readonly_session_has_actionable_error_without_auth_guard_changes(self):
+        from unittest.mock import Mock
+        from moonuestc.errors import AuthRequired
+        from moonuestc.state import State
+        transport=Mock();school=Mock();school.enter.side_effect=AuthRequired('portal_session_rejected','portal_warmup')
+        state=State(self.store.directory)
+        before=[tuple(r) for r in state.db.execute('SELECT * FROM logins')];state.close()
+        with patch('moonuestc.class_cadre.EncryptedTransport',return_value=transport),patch('moonuestc.class_cadre.School',return_value=school):
+            with self.assertRaises(WebError) as raised:
+                with school_session(self.store,self.aid,clock=lambda:self.instant,allow_login=False):self.fail('Expired session cannot yield')
+        self.assertEqual(raised.exception.code,'school_session_expired')
+        self.assertIn('更新学校验证',raised.exception.message)
+        school.connect.assert_not_called();transport.save.assert_called_once()
+        state=State(self.store.directory)
+        self.assertEqual([tuple(r) for r in state.db.execute('SELECT * FROM logins')],before)
+        self.assertEqual(state.db.execute('SELECT count(*) FROM auth_recovery').fetchone()[0],0);state.close()
     def test_obsolete_test_group_code_never_changes_formal_or_exclusion_settings(self):
         before=copy.deepcopy(self.support.data.cadre(self.aid))
         code=self.support.data.new_code('group',account_id=self.aid)

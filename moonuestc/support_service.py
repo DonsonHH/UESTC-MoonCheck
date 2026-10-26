@@ -20,7 +20,7 @@ class SupportManager:
         self.store=store;self.data=SupportStore(store);self.session_factory=session_factory;self.qq_factory=qq_factory;self.clock=clock
         self.background=background;self.pool=ThreadPoolExecutor(max_workers=1,thread_name_prefix='moon-support') if background else None
         self.lock=threading.RLock();self.pending=set();self.client=None;self.client_key=None;self.next_poll=0;self.next_prune=0;self.closed=False
-    def session(self,account_id):return self.session_factory(self.store,account_id,clock=self.clock)
+    def session(self,account_id,*,allow_login=True):return self.session_factory(self.store,account_id,clock=self.clock,allow_login=allow_login)
     def client_for_bot(self):
         config=self.data.get('qq_bot')
         if not config.get('enabled') or not config.get('app_id') or not config.get('app_secret'):raise QQError('qq_not_configured')
@@ -50,7 +50,7 @@ class SupportManager:
         if actor['role']!='admin':raise WebError(403,'admin_required','班级功能仅供管理员使用。')
         self.data.owner(actor,account_id,require_cadre=False)
         day=self.clock().date().isoformat()
-        with self.session(account_id) as school:
+        with self.session(account_id,allow_login=False) as school:
             classes=school.classes();config=self.data.cadre(account_id)
             key=config.get('class_key') or (classes[0]['class_key'] if len(classes)==1 else '')
             roster=school.roster(key,day) if key else []
@@ -87,7 +87,7 @@ class SupportManager:
             if value['group_openid']:identifier(value['group_openid'])
         except QQError:raise WebError(400,'invalid_qq_identifier','请使用机器人返回的 QQ OpenID。') from None
         if len(set(value['members'].values()))!=len(value['members']):raise WebError(400,'duplicate_member','同一班级成员不能绑定到多位学生。')
-        with self.session(account_id) as school:
+        with self.session(account_id,allow_login=False) as school:
             classes=school.classes();rows=school.roster(value['class_key'],self.clock().date().isoformat())
             roster={r['student_id']:r for r in rows}
             if not set(value['targets'])<=set(roster) or not set(value['members'])<=set(roster):raise WebError(400,'class_target_not_found','学生不在此账号有权管理的班级。')

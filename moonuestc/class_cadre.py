@@ -4,11 +4,12 @@ import datetime as dt
 import urllib.parse
 
 from .client import School
-from .errors import ToolError
+from .errors import AuthRequired,ToolError
 from .policy import now,TERMINAL
 from .runner import account_key,cookie_path
 from .state import State,execution_lock
 from .vault import EncryptedTransport
+from .web_errors import WebError
 
 PENDING={'PENDING','NOT_CHECKIN'}
 
@@ -89,7 +90,7 @@ class CadreSchool:
 
 
 @contextlib.contextmanager
-def school_session(store,account_id,*,clock=now):
+def school_session(store,account_id,*,clock=now,allow_login=False):
     with store.db() as db:
         row=db.execute('SELECT a.*,u.active FROM web_accounts a JOIN web_users u ON u.id=a.owner_id WHERE a.id=?',(account_id,)).fetchone()
     if not row or not row['active'] or not row['enabled']:raise ToolError('account_disabled','class_permissions')
@@ -99,9 +100,12 @@ def school_session(store,account_id,*,clock=now):
         school=School(transport,account,budget=lambda:state.login_budget(key,clock().date().isoformat()),emit=lambda *a,**k:None,
             before_login=lambda:state.check_unattended_login(key,clock().date().isoformat()))
         try:
-            school.connect()
+            if allow_login:school.connect()
+            else:school.enter()
             yield CadreSchool(school,clock)
         except ToolError as error:
+            if not allow_login and isinstance(error,AuthRequired):
+                raise WebError(409,'school_session_expired','学校会话已失效，请由账号本人在“账号连接”更新学校验证后重试。') from None
             state.require_interactive_auth(key,error.reason);raise
         finally:
             transport.save()

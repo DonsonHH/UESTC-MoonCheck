@@ -73,7 +73,7 @@ class SupportStore:
                 if not value:return False
                 if self.get('qq_test_destination',db=db).get('group_openid')==context['target']:return False
                 if value.get('group_openid')!=context['target']:value['members']={}
-                value.update(group_openid=context['target'],group_reminders=True)
+                value['group_openid']=context['target']
                 self.put(name,value,account_id=row['account_id'],db=db)
             elif row['kind']=='personal':
                 if context['kind']!='user':return False
