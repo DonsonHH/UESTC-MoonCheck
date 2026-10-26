@@ -84,13 +84,30 @@ class ClassBot(fixtures.WebCase):
     def event(self,content,*,group=False,ident='synthetic-message-1'):
         return {'op':0,'id':ident,'t':'GROUP_AT_MESSAGE_CREATE' if group else 'C2C_MESSAGE_CREATE','d':{'id':ident,'content':content,
             'group_openid':'synthetic-group','author':{'user_openid':'synthetic-person','member_openid':'synthetic-member'}}}
-    def test_class_page_is_owner_scoped_and_regular_users_cannot_enumerate(self):
-        self.assertEqual(self.req(self.c2,self.t2,'/api/class/'+self.aid).status_code,404)
-        self.support.data.put('cadre:'+self.aid,{},account_id=self.aid)
-        self.assertEqual(self.req(self.c1,self.t1,'/api/class/'+self.aid).status_code,403)
+    def test_class_page_and_snapshot_are_admin_only_even_for_configured_owner(self):
+        for client,token in ((self.c1,self.t1),(self.c2,self.t2)):
+            self.assertEqual(self.req(client,token,'/api/class/'+self.aid).status_code,403)
+            self.assertEqual(client.get('/app/class',base_url=fixtures.ORIGIN).status_code,404)
+            self.assertFalse(self.req(client,token,'/api/support/features').json.get('class_management'))
         self.assertEqual(self.sessions,0)
+        self.assertEqual(self.req(self.ac,self.at,'/api/class/'+self.aid).status_code,200)
+    def test_class_snapshot_method_rejects_non_admin_before_school_calls(self):
+        with self.assertRaises(WebError) as raised:self.support.class_snapshot(self.u1,self.aid)
+        self.assertEqual(raised.exception.code,'admin_required');self.assertEqual(self.sessions,0)
+    def test_formal_binding_and_connection_check_reject_obsolete_test_modes(self):
+        for path,value in (('group-binding',{'test':True}),('group-binding',{'test':False}),('test-message',{'confirm':True,'test':True})):
+            result=self.req(self.ac,self.at,'/api/class/'+self.aid+'/'+path,'POST',value)
+            self.assertEqual(result.status_code,400,result.json)
+        self.assertEqual(self.qq.messages,[])
+    def test_snapshot_hides_rehearsals_but_preserves_the_original_ledger(self):
+        self.support.data.begin('synthetic-rehearsal','group_connection_test',DAY,account_id=self.aid)
+        result=self.req(self.ac,self.at,'/api/class/'+self.aid)
+        self.assertEqual(result.status_code,200,result.json)
+        self.assertNotIn('test_group_bound',result.json)
+        self.assertFalse(any(r['kind']=='group_connection_test' for r in result.json['runs']))
+        self.assertTrue(any(r['kind']=='group_connection_test' for r in self.support.data.runs(self.aid)))
     def test_snapshot_excludes_school_phone_dormitory_and_record_identifiers(self):
-        response=self.req(self.c1,self.t1,'/api/class/'+self.aid);self.assertEqual(response.status_code,200,response.json)
+        response=self.req(self.ac,self.at,'/api/class/'+self.aid);self.assertEqual(response.status_code,200,response.json)
         self.assertEqual(response.json['pending_count'],2)
         raw=response.get_data(as_text=True)
         for text in ('synthetic-private-phone','synthetic-private-room','synthetic-record-99'):self.assertNotIn(text,raw)
@@ -133,7 +150,7 @@ class ClassBot(fixtures.WebCase):
         CadreSchool(self.school,lambda:self.instant).report('synthetic-class',TARGET,DAY,self.support.data,self.aid,self.store.execution_window)
         before=copy.deepcopy(self.support.data.runs(self.aid))
         self.assertEqual(before[0]['result']['result'],'submission_unknown')
-        response=self.req(self.c1,self.t1,'/api/class/'+self.aid)
+        response=self.req(self.ac,self.at,'/api/class/'+self.aid)
         self.assertEqual(response.status_code,200,response.json)
         run=response.json['runs'][0]
         self.assertEqual(run.get('verified_school_status'),'STUDENT_REPORTED','Current official status must resolve the display even if the POST timed out')
@@ -143,11 +160,11 @@ class ClassBot(fixtures.WebCase):
     def test_snapshot_does_not_verify_historical_claim_from_today_record(self):
         self.support.data.begin('synthetic-class\0'+TARGET,'class_report','2026-10-25',account_id=self.aid,initial={'result':'submission_unknown'})
         self.school.rows[0]['recordStatusCode']='STUDENT_REPORTED'
-        value=self.req(self.c1,self.t1,'/api/class/'+self.aid).json
+        value=self.req(self.ac,self.at,'/api/class/'+self.aid).json
         self.assertNotIn('verified_school_status',value['runs'][0])
     def test_snapshot_bundle_view_uses_fresh_records_without_losing_original_counts(self):
         self.parent_job();self.school.failure='delivered_timeout';self.support.report_class(self.aid,DAY)
-        response=self.req(self.c1,self.t1,'/api/class/'+self.aid)
+        response=self.req(self.ac,self.at,'/api/class/'+self.aid)
         self.assertEqual(response.status_code,200,response.json)
         bundle=next(r for r in response.json['runs'] if r['kind']=='class_bundle')
         self.assertEqual(bundle['result']['unconfirmed'],1)
@@ -160,7 +177,7 @@ class ClassBot(fixtures.WebCase):
             if path.startswith('/class-cadre/checkin-list'):self.instant+=dt.timedelta(days=1)
             return result
         self.school.api=rollover
-        response=self.req(self.c1,self.t1,'/api/class/'+self.aid)
+        response=self.req(self.ac,self.at,'/api/class/'+self.aid)
         self.assertEqual(response.status_code,500,response.json)
         self.assertEqual(response.json['error']['code'],'business_date_changed');self.assertEqual(self.school.posts,[])
     def test_unknown_school_status_never_counts_as_success(self):
@@ -227,7 +244,7 @@ class ClassBot(fixtures.WebCase):
         self.qq.send=changed;self.support.remind_class(self.aid,DAY)
         self.assertEqual(len(self.qq.messages),1)
     def test_formal_connection_test_preserves_all_mention_quota(self):
-        response=self.req(self.ac,self.at,'/api/class/'+self.aid+'/test-message','POST',{'confirm':True,'test':False})
+        response=self.req(self.ac,self.at,'/api/class/'+self.aid+'/test-message','POST',{'confirm':True})
         self.assertEqual(response.status_code,200,response.json)
         self.assertEqual(len(self.qq.messages),1);self.assertNotIn('<qqbot-at-everyone />',self.qq.messages[0][2])
     def opening(self,**changes):
@@ -413,12 +430,14 @@ class ClassBot(fixtures.WebCase):
             with self.assertRaises(ToolError):
                 with school_session(self.store,self.aid,clock=lambda:self.instant):self.fail('Failed login cannot yield a school session')
         transport.save.assert_called_once()
-    def test_test_group_binding_never_activates_or_replaces_formal_group(self):
-        before=copy.deepcopy(self.support.data.cadre(self.aid));code=self.support.data.new_code('group_test',account_id=self.aid)
-        event=self.event('绑定测试群 '+code,group=True);event['d']['group_openid']='synthetic-test-group'
-        self.assertEqual(self.callback(event).status_code,200)
+    def test_obsolete_test_group_code_never_changes_formal_or_exclusion_settings(self):
+        before=copy.deepcopy(self.support.data.cadre(self.aid))
+        code=self.support.data.new_code('group',account_id=self.aid)
+        digest=self.store.vault.digest('support_binding',code)
+        with self.store.db(True) as db:db.execute("UPDATE web_support_tokens SET kind='group_test' WHERE digest=?",(digest,))
+        self.assertFalse(self.support.data.bind_code(code,{'kind':'group','target':'synthetic-test-group','sender':'synthetic-member'}))
         self.assertEqual(self.support.data.cadre(self.aid),before)
-        self.assertEqual(self.support.data.get('qq_test_destination')['group_openid'],'synthetic-test-group')
+        self.assertEqual(self.support.data.get('qq_test_destination'),{})
     def test_changing_formal_group_clears_old_group_member_mappings(self):
         code=self.support.data.new_code('group',account_id=self.aid);event=self.event('绑定班级 '+code,group=True)
         event['d']['group_openid']='synthetic-new-formal-group';self.callback(event)

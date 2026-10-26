@@ -251,7 +251,7 @@ def create_app(directory,public_url,*,allow_http=False,start_worker=False,runner
         return response_ok({'code':support.data.new_code('personal',user_id=g.moon_user['id']),'expires_in':600})
 
     @app.get('/api/class/<account_id>')
-    @protected()
+    @protected(admin=True)
     def class_snapshot(account_id):return response_ok(support.class_snapshot(g.moon_user,account_id))
 
     @app.patch('/api/class/<account_id>')
@@ -263,19 +263,19 @@ def create_app(directory,public_url,*,allow_http=False,start_worker=False,runner
     def class_group_binding(account_id):
         support.data.owner(g.moon_user,account_id)
         value=body()
-        if set(value)-{'test'} or type(value.get('test',False)) is not bool:raise WebError(400,'invalid_fields','群绑定参数不正确。')
-        return response_ok({'code':support.data.new_code('group_test' if value.get('test') else 'group',account_id=account_id),'expires_in':600,'test':value.get('test',False)})
+        if value:raise WebError(400,'invalid_fields','请刷新管理端后重新生成班级群绑定码。')
+        return response_ok({'code':support.data.new_code('group',account_id=account_id),'expires_in':600})
 
     @app.post('/api/class/<account_id>/test-message')
     @protected(admin=True)
     def class_test_message(account_id):
         support.data.owner(g.moon_user,account_id)
         value=body()
-        if value.get('confirm') is not True or set(value)-{'confirm','test'} or type(value.get('test',False)) is not bool:raise WebError(400,'confirmation_required','请确认发送测试消息。')
+        if value.get('confirm') is not True or set(value)-{'confirm'}:raise WebError(400,'confirmation_required','请确认向已绑定的班级群发送连接检查消息。')
         config=support.data.cadre(account_id)
-        target=(support.data.get('qq_test_destination') if value.get('test') else config).get('group_openid')
-        if not target:raise WebError(409,'group_not_bound','请先绑定所选群。')
-        message='<qqbot-at-everyone /> 晚安成电测试群连接测试：不包含真实班级签到名单。' if value.get('test') else '晚安成电：正式群连接检查成功。此测试不触发 @全体，保留额度用于23:10提醒；不包含真实签到名单。'
+        target=config.get('group_openid')
+        if not target or target==support.data.get('qq_test_destination').get('group_openid'):raise WebError(409,'group_not_bound','请先绑定班级群。')
+        message='晚安成电：班级群连接正常。此消息仅检查连接，不触发 @全体。已开启的提醒将按管理端设置执行。'
         support.client_for_bot().send('group',target,message)
         return response_ok({'sent':True})
 
@@ -324,7 +324,6 @@ def create_app(directory,public_url,*,allow_http=False,start_worker=False,runner
     @app.get('/app/settings')
     @app.get('/app/authorization')
     @app.get('/app/reminders')
-    @app.get('/app/class')
     def student_page():
         if not app.config['MOON_PORTAL_ENABLED']:raise WebError(404,'not_found','用户端尚未启用。')
         return send_from_directory(static/'ui','index.html')

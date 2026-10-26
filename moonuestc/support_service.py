@@ -45,12 +45,10 @@ class SupportManager:
         self.client_for_bot().identity();value=self.data.get('qq_bot');value['verified_at']=time.time();self.data.put('qq_bot',value)
         return {'verified':True}
     def feature_summary(self,actor):
-        with self.store.db() as db:
-            row=db.execute('SELECT id FROM web_accounts WHERE owner_id=?',(actor['id'],)).fetchone()
-        cadre=bool(row and self.data.cadre(row['id']))
-        return {'class_management':cadre,'qq_available':bool(self.data.get('qq_bot').get('enabled'))}
+        return {'qq_available':bool(self.data.get('qq_bot').get('enabled'))}
     def class_snapshot(self,actor,account_id):
-        self.data.owner(actor,account_id,require_cadre=actor['role']!='admin')
+        if actor['role']!='admin':raise WebError(403,'admin_required','班级功能仅供管理员使用。')
+        self.data.owner(actor,account_id,require_cadre=False)
         day=self.clock().date().isoformat()
         with self.session(account_id) as school:
             classes=school.classes();config=self.data.cadre(account_id)
@@ -60,7 +58,7 @@ class SupportManager:
         # original delivery evidence or release a claim after an uncertain POST.
         verified={self.data.run_id(key+'\0'+r['student_id'],'class_report',day):r['status'] for r in roster if r['status'] in TERMINAL}
         selected=set(config.get('targets',[]));confirmed=sum(r['student_id'] in selected and r['status'] in TERMINAL for r in roster)
-        runs=self.data.runs(account_id,with_ident=True)
+        runs=[r for r in self.data.runs(account_id,with_ident=True) if r['kind']!='group_connection_test']
         for run in runs:
             ident=run.pop('_ident')
             if run['business_date']!=day:continue
@@ -68,7 +66,7 @@ class SupportManager:
             if run['kind']=='class_bundle':run.update(verified_target_count=confirmed,selected_target_count=len(selected))
         return {'classes':classes,'students':[{k:r[k] for k in ('student_id','name','status')} for r in roster],
             'business_date':day,'pending_count':sum(r['status'] in PENDING for r in roster),
-            'settings':config,'configuration_revision':self.class_revision(config),'test_group_bound':bool(self.data.get('qq_test_destination').get('group_openid')),
+            'settings':config,'configuration_revision':self.class_revision(config),
             'runs':runs,'remark_preview':daily_remark(day)}
     def class_revision(self,value):return self.store.vault.digest('class_settings',json.dumps(value,sort_keys=True,separators=(',',':')))
     def configure_class(self,actor,account_id,data):
@@ -147,10 +145,10 @@ class SupportManager:
                 if content in ('身份','我的身份'):
                     self.data.contact(context)
                     reply=('本群标识：'+context['target']+'\n你的群成员标识：'+context['sender']) if context['kind']=='group' else '你的私聊标识：'+context['sender']
-                elif re.fullmatch(r'(?:绑定|绑定班级|绑定测试群)\s+[A-Fa-f0-9]{16}',content):
+                elif re.fullmatch(r'(?:绑定|绑定班级)\s+[A-Fa-f0-9]{16}',content):
                     success=self.data.bind_code(content.split()[-1],context)
                     if success:self.data.contact(context)
-                    reply=('测试群已连接，不会接收正式班级状态。' if success=='group_test' else '正式班级群已绑定；每日提醒使用 @全体与未签到名单，请确保机器人有管理员权限。' if context['kind']=='group' else 'QQ 已绑定；请返回网页，自行开启每日提醒。') if success else '绑定码无效、过期或场景不匹配，请重新生成。'
+                    reply=('班级群已绑定；已开启的每日提醒将按设置执行，请确保机器人有管理员和主动发言权限。' if context['kind']=='group' else 'QQ 已绑定；请返回网页，自行开启每日提醒。') if success else '绑定码无效、过期或场景不匹配，请重新生成。'
                 elif content in ('取消提醒','停止提醒') and context['kind']=='user':
                     for uid,value in self.data.reminders():
                         if value.get('openid')==context['sender']:

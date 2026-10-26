@@ -18,7 +18,7 @@ class PrivateSurfaces(unittest.TestCase):
   login=self.post(self.ac,PRIVATE,'/api/admin/login',{'username':'admin','password':PASSWORD});self.assertEqual(login.status_code,200)
   token=self.ac.get_cookie('moon_dashboard_session',domain='127.0.0.1').value
   self.pc.set_cookie('moon_dashboard_session',token,domain='moon.example.test')
-  for path in ['/admin','/admin/login','/admin/users','/admin/accounts','/api/users','/api/portal/authorizations']:
+  for path in ['/admin','/admin/login','/admin/users','/admin/accounts','/api/users','/api/portal/authorizations','/app/class','/api/class/synthetic-account']:
    self.assertEqual(self.pc.get(path,base_url=PUBLIC).status_code,404,path)
   for path in ['/api/login','/api/admin/login']:
    self.assertEqual(self.post(self.pc,PUBLIC,path,{'username':'admin','password':PASSWORD}).status_code,404)

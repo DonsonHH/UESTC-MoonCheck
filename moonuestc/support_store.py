@@ -53,6 +53,7 @@ class SupportStore:
             return [(row['id'],self.get(row['name'],db=db)) for row in rows]
 
     def new_code(self,kind,*,account_id=None,user_id=None):
+        if kind not in ('group','personal'):raise WebError(400,'invalid_binding_kind','不支持此绑定方式。')
         code=secrets.token_hex(8).upper();digest=self.store.vault.digest('support_binding',code)
         with self.store.db(True) as db:
             db.execute('DELETE FROM web_support_tokens WHERE expires_at<?',(time.time(),))
@@ -66,17 +67,14 @@ class SupportStore:
         with self.store.db(True) as db:
             row=db.execute('SELECT * FROM web_support_tokens WHERE digest=? AND expires_at>?',(digest,time.time())).fetchone()
             if not row:return False
-            if row['kind'] in ('group','group_test'):
+            if row['kind']=='group':
                 if context['kind']!='group':return False
                 name='cadre:'+row['account_id'];value=self.get(name,db=db)
                 if not value:return False
-                if row['kind']=='group_test':
-                    self.put('qq_test_destination',{'group_openid':context['target'],'openid':context['sender']},db=db)
-                else:
-                    if self.get('qq_test_destination',db=db).get('group_openid')==context['target']:return False
-                    if value.get('group_openid')!=context['target']:value['members']={}
-                    value.update(group_openid=context['target'],group_reminders=True)
-                    self.put(name,value,account_id=row['account_id'],db=db)
+                if self.get('qq_test_destination',db=db).get('group_openid')==context['target']:return False
+                if value.get('group_openid')!=context['target']:value['members']={}
+                value.update(group_openid=context['target'],group_reminders=True)
+                self.put(name,value,account_id=row['account_id'],db=db)
             elif row['kind']=='personal':
                 if context['kind']!='user':return False
                 name='reminder:'+str(row['user_id']);value=self.get(name,{'enabled':False},db=db)
