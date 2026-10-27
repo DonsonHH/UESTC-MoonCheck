@@ -47,7 +47,7 @@ class OperatorNotifications:
         if not attention and not success:return
         kind='operator_alert' if attention else 'operator_success'
         scope=row['id'] if attention else row['student_digest']
-        ident,fresh,_=self.data.begin(scope,kind,row['business_date'],account_id=row['account_id'],initial={'result':'delivery_unknown'})
+        ident,fresh,_=self.data.begin(scope,kind,row['business_date'],account_id=row['account_id'],initial={'result':'delivery_unknown'},retry_cancelled=True)
         if not fresh:return
         with self.store.db() as db:
             account=db.execute('SELECT payload FROM web_accounts WHERE id=?',(row['account_id'],)).fetchone()

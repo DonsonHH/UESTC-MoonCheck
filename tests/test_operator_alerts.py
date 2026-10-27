@@ -117,3 +117,17 @@ class OperatorAlerts(fixtures.WebCase):
         with patch.object(self.support.data,'begin',side_effect=pause_and_resume):
             self.support.operator.notify(row['id'])
         self.assertEqual(self.qq.messages,[],'Re-enabled notifications must not send a result predating the new cutoff')
+    def test_cancelled_success_does_not_suppress_new_success_after_resume(self):
+        row,_=self.job(result={'result':'confirmed','status':'CHECKED_IN'});begin=self.support.data.begin
+        def pause_after_claim(*args,**kwargs):
+            claimed=begin(*args,**kwargs);self.support.operator.configure({'enabled':False});return claimed
+        with patch.object(self.support.data,'begin',side_effect=pause_after_claim):self.support.operator.notify(row['id'])
+        self.assertEqual(self.qq.messages,[])
+        with patch('moonuestc.operator_notifications.time.time',return_value=self.stamp+1):
+            self.support.operator.configure({'enabled':True})
+        self.notify(result={'result':'already_recorded','status':'CHECKED_IN'})
+        self.assertEqual(len(self.qq.messages),1,'A known unsent cancellation must not consume the daily completion notification')
+    def test_uncertain_success_delivery_cannot_rearm_for_another_success(self):
+        self.qq.fail=True;self.notify(result={'result':'confirmed','status':'CHECKED_IN'})
+        self.qq.fail=False;self.notify(result={'result':'already_recorded','status':'CHECKED_IN'})
+        self.assertEqual(len(self.qq.messages),1,'A delivery attempt must retain daily deduplication even if QQ returned no confirmation')

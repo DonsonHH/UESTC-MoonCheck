@@ -106,14 +106,23 @@ class SupportStore:
 
     def run_id(self,scope,kind,day):return self.store.vault.digest('support_run',kind+'\0'+scope+'\0'+day)
 
-    def begin(self,scope,kind,day,*,account_id=None,initial=None):
+    def begin(self,scope,kind,day,*,account_id=None,initial=None,retry_cancelled=False):
         ident=self.run_id(scope,kind,day)
         with self.store.db(True) as db:
             row=db.execute('SELECT * FROM web_support_runs WHERE ident=?',(ident,)).fetchone()
-            if row:return ident,False,self.store.vault.open(row['payload'],'support_run:'+ident)
+            if row:
+                previous=self.store.vault.open(row['payload'],'support_run:'+ident)
+                if not retry_cancelled or kind not in ('operator_alert','operator_success') or row['state']!='done' or previous.get('result')!='reminder_cancelled':
+                    return ident,False,previous
             stamp=time.time();value=initial or {}
-            db.execute('INSERT INTO web_support_runs VALUES(?,?,?,?,?,?,?,?)',
-                (ident,account_id,kind,day,'started',self.store.vault.seal(value,'support_run:'+ident),stamp,stamp))
+            if row:
+                # Only a known pre-send cancellation can rearm; sent, failed or
+                # unknown deliveries and school-write claims remain final.
+                db.execute("UPDATE web_support_runs SET account_id=?,state='started',payload=?,updated_at=? WHERE ident=?",
+                    (account_id,self.store.vault.seal(value,'support_run:'+ident),stamp,ident))
+            else:
+                db.execute('INSERT INTO web_support_runs VALUES(?,?,?,?,?,?,?,?)',
+                    (ident,account_id,kind,day,'started',self.store.vault.seal(value,'support_run:'+ident),stamp,stamp))
         return ident,True,value
 
     def finish(self,ident,result,state='done'):
