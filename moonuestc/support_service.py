@@ -105,15 +105,16 @@ class SupportManager:
             self.store._audit(db,actor,'class_settings_updated',account_id)
         return value
     def submit(self,key,function):
+        notification=key.startswith('operator')
         with self.lock:
-            if self.closed or key in self.pending or len(self.pending)>=32:return
+            if self.closed or key in self.pending or sum(k.startswith('operator')==notification for k in self.pending)>=32:return
             self.pending.add(key)
         def run():
             try:function()
             except Exception:pass  # No raw network errors, school records or credentials in logs.
             finally:
                 with self.lock:self.pending.discard(key)
-        if self.pool:(self.notification_pool if key.startswith('operator') else self.pool).submit(run)
+        if self.pool:(self.notification_pool if notification else self.pool).submit(run)
         else:run()
     def callback(self,key,headers,raw):
         config=self.data.get('qq_bot')

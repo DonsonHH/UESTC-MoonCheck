@@ -95,3 +95,25 @@ class OperatorAlerts(fixtures.WebCase):
             manager.submit('operator-slow',blocked);self.assertTrue(started.wait(1))
             manager.submit('class-timed',class_done.set);self.assertTrue(class_done.wait(1))
         finally:release.set();manager.close()
+    def test_operator_backlog_does_not_consume_class_queue_capacity(self):
+        import threading
+        started=threading.Event();release=threading.Event();class_done=threading.Event()
+        manager=SupportManager(self.store,background=True)
+        def blocked():started.set();release.wait(3)
+        try:
+            for index in range(32):manager.submit('operator-backlog:'+str(index),blocked)
+            self.assertTrue(started.wait(1))
+            manager.submit('class-timed',class_done.set)
+            self.assertTrue(class_done.wait(1),'A full private-notification queue must not suppress class work')
+        finally:release.set();manager.close()
+    def test_pause_and_resume_during_preparation_honors_new_cutoff(self):
+        row,_=self.job();begin=self.support.data.begin
+        def pause_and_resume(*args,**kwargs):
+            claimed=begin(*args,**kwargs)
+            self.support.operator.configure({'enabled':False})
+            with patch('moonuestc.operator_notifications.time.time',return_value=self.stamp+60):
+                self.support.operator.configure({'enabled':True})
+            return claimed
+        with patch.object(self.support.data,'begin',side_effect=pause_and_resume):
+            self.support.operator.notify(row['id'])
+        self.assertEqual(self.qq.messages,[],'Re-enabled notifications must not send a result predating the new cutoff')

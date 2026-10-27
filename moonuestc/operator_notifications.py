@@ -1,6 +1,5 @@
 """Final job events to one encrypted operator destination, without school calls."""
 import json
-import re
 import time
 
 from .qq_bot import QQError,identifier
@@ -63,7 +62,7 @@ class OperatorNotifications:
             lines.extend([f'操作：{mode}',f'结果：{detail}','请在管理端查看最近结果并处理。'])
         else:lines.append('学校已确认本人今日签到，可以安心休息了。')
         current=self.data.get('qq_operator')
-        if not current.get('enabled') or current.get('openid')!=c['openid'] or not self.data.get('qq_bot').get('enabled'):
+        if not current.get('enabled') or current.get('openid')!=c['openid'] or row['finished_at']<current.get('not_before',0) or not self.data.get('qq_bot').get('enabled'):
             self.data.finish(ident,{'result':'reminder_cancelled'});return
         try:self.client().send('user',identifier(c['openid']),'\n'.join(lines))
         except QQError as error:
