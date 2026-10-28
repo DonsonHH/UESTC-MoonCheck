@@ -17,7 +17,8 @@ REASONS={'need_manual_mfa':'需要本人完成学校二次验证','need_manual_c
     'wechat_authorization_expired':'微信授权已失效，需要本人重新连接','wechat_access_token_invalid':'微信访问凭据刷新失败',
     'wechat_identity_mismatch':'微信与学校账号身份不一致','reserved_slot_expired':'错过本次执行时段',
     'schedule_deadline_missed':'排队已超过学校时段','outside_allowed_location':'所选地点不在校方允许范围',
-    'variation_outside_allowed_location':'位置浮动范围不在校方允许区域','record_not_confirmed':'学校记录尚未确认'}
+    'variation_outside_allowed_location':'位置浮动范围不在校方允许区域','record_not_confirmed':'学校记录尚未确认',
+    'reverse_geocode_unavailable':'学校地址解析暂不可用，尚未提交签到'}
 
 
 class OperatorNotifications:

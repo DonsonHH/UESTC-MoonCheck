@@ -21,3 +21,9 @@ test('network uncertainty still offers rechecking and accepted delivery is not c
  assert.equal(resultLabel({result:'submission_unknown',reason:'record_not_confirmed'}),'学校记录尚未确认');
  assert.equal(requiresOfficialEntry({result:'submission_unknown',submission:{outcome:'accepted',apiCode:0}}),false);
 });
+
+test('school address outage has a clear label and keeps scheduled retry state visible',()=>{
+ assert.equal(resultLabel({result:'error',reason:'reverse_geocode_unavailable'}),'学校地址解析暂不可用');
+ assert.equal(resultLabel({result:'retry_pending',reason:'reverse_geocode_unavailable'}),'等待自动重试');
+ assert.equal(resultLabel({result:'error',reason:'reverse_geocode_unavailable',retryExhausted:true}),'重试后仍失败，需处理');
+});

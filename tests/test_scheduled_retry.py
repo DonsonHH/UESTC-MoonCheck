@@ -24,6 +24,51 @@ class Retrying(unittest.TestCase):
   later=INSTANT.fromtimestamp(job['available_at'],INSTANT.tzinfo)
   with patch('moonuestc.web_service.now',return_value=later),patch('moonuestc.web_store.time.time',return_value=later.timestamp()):worker.run_one()
   job=restored.jobs(self.admin,self.job);self.assertEqual(job['state'],'failed');self.assertEqual(job['result']['reason'],'timeout');self.assertTrue(job['result']['retryExhausted']);self.assertEqual(len(calls),2)
+ def geocode_worker(self):
+  from test_fixed_locations import RecordingTransport,fixed_account
+  from moonuestc.runner import run_account
+  with self.store.db(True) as db:
+   row=db.execute('SELECT * FROM web_accounts WHERE id=?',(self.account['id'],)).fetchone();payload=self.store._payload(row)
+   payload['location']=fixed_account(reverse_geocode='')['location']
+   db.execute('UPDATE web_accounts SET payload=? WHERE id=?',(self.store.vault.seal(payload,'account:'+row['id']),row['id']))
+  transport=RecordingTransport();transport.address_data=None
+  def runner(a,m,s,d,**kw):
+   return run_account(a,m,s,d,clock=lambda:self.clock,sleep=lambda _:None,transport_factory=lambda *args:transport)
+  self.clock=INSTANT
+  return WebWorker(self.store,runner=runner),transport
+ def test_empty_school_address_defers_then_recovers_with_one_checkin_post(self):
+  from moonuestc.state import State
+  from moonuestc.runner import account_key
+  worker,transport=self.geocode_worker()
+  with patch('moonuestc.web_service.now',return_value=self.clock),patch('moonuestc.web_store.time.time',return_value=self.clock.timestamp()):worker.run_one()
+  pending=self.store.jobs(self.admin,self.job)
+  self.assertEqual(pending['state'],'queued','An empty pre-submit school address should receive the existing delayed retry')
+  self.assertEqual(pending['attempt'],1);self.assertGreaterEqual(pending['available_at'],self.clock.timestamp()+120)
+  self.assertEqual(transport.post_count,0)
+  payload=self.store.job_payload({'account_id':self.account['id']});state=State(self.tmp.name)
+  try:self.assertFalse(state.claimed(account_key(payload),self.clock.date().isoformat()))
+  finally:state.close()
+  self.clock=self.clock.fromtimestamp(pending['available_at'],self.clock.tzinfo);transport.address_data='Synthetic school address'
+  with patch('moonuestc.web_service.now',return_value=self.clock),patch('moonuestc.web_store.time.time',return_value=self.clock.timestamp()):worker.run_one()
+  self.assertEqual(self.store.jobs(self.admin,self.job)['result']['result'],'confirmed');self.assertEqual(transport.post_count,1)
+ def test_repeated_empty_school_address_stops_after_one_retry_without_post(self):
+  worker,transport=self.geocode_worker()
+  for attempt in range(2):
+   with patch('moonuestc.web_service.now',return_value=self.clock),patch('moonuestc.web_store.time.time',return_value=self.clock.timestamp()):worker.run_one()
+   job=self.store.jobs(self.admin,self.job)
+   if attempt==0:
+    self.assertEqual(job['state'],'queued');self.clock=self.clock.fromtimestamp(job['available_at'],self.clock.tzinfo)
+  self.assertEqual(job['state'],'failed');self.assertEqual(job['result']['reason'],'reverse_geocode_unavailable')
+  self.assertTrue(job['result']['retryExhausted']);self.assertEqual(transport.post_count,0);self.assertEqual(len(transport.reverse_queries),2)
+ def test_manual_success_before_address_retry_skips_lookup_and_submission(self):
+  worker,transport=self.geocode_worker()
+  with patch('moonuestc.web_service.now',return_value=self.clock),patch('moonuestc.web_store.time.time',return_value=self.clock.timestamp()):worker.run_one()
+  pending=self.store.jobs(self.admin,self.job);self.assertEqual(pending['state'],'queued')
+  transport.status='CHECKED_IN';self.clock=self.clock.fromtimestamp(pending['available_at'],self.clock.tzinfo)
+  with patch('moonuestc.web_service.now',return_value=self.clock),patch('moonuestc.web_store.time.time',return_value=self.clock.timestamp()):worker.run_one()
+  result=self.store.jobs(self.admin,self.job)['result']
+  self.assertEqual(result['result'],'already_recorded');self.assertEqual(result['status'],'CHECKED_IN')
+  self.assertEqual(transport.post_count,0);self.assertEqual(len(transport.reverse_queries),1)
  def test_captcha_is_owner_action_not_an_automatic_retry(self):
   worker=WebWorker(self.store,runner=lambda *a,**kw:(_ for _ in ()).throw(ToolError('need_manual_captcha','cas_submit')))
   with patch('moonuestc.web_service.now',return_value=INSTANT):worker.run_one()

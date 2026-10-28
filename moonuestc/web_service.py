@@ -13,7 +13,7 @@ from .web_errors import WebError
 from .daily_plan import planned_time
 from .scheduling import slot_target
 
-RETRY_REASONS={'session_rejected','portal_session_rejected','micro_app_unauthorized','timeout','network_error','connection_error','http_error','invalid_json','record_not_confirmed','worker_internal_error','dns_error','reserved_slot_expired'}
+RETRY_REASONS={'session_rejected','portal_session_rejected','micro_app_unauthorized','timeout','network_error','connection_error','http_error','invalid_json','record_not_confirmed','worker_internal_error','dns_error','reserved_slot_expired','reverse_geocode_unavailable'}
 RETRY_REASONS.update({'wechat_code_transport_failed','wechat_network_unavailable','wechat_poll_timeout',
     'wechat_refresh_failed','wechat_protocol_login_failed','wechat_http_failure','wechat_login_buffer_failed'})
 
