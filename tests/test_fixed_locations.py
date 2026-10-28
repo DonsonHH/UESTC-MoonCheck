@@ -161,6 +161,22 @@ class FixedFlows(unittest.TestCase):
         for key in ("address", "reverseGeocode", "formattedAddress"):
             self.transport.address_data = {key: "Synthetic address"}
             self.assertEqual(school.reverse_geocode(0, 0), "Synthetic address")
+    def test_short_empty_school_response_recovers_within_the_same_manual_operation(self):
+        original=self.transport.request;responses=iter([None,'Synthetic recovered address'])
+        def intermittent(method,url,**kwargs):
+            if kwargs['stage']=='reverse_geocode':self.transport.address_data=next(responses)
+            return original(method,url,**kwargs)
+        self.transport.request=intermittent
+        out=self.run_mode(account=fixed_account(reverse_geocode=''))
+        self.assertEqual(out['result'],'confirmed');self.assertEqual(self.transport.post_count,1)
+        self.assertEqual(len(self.transport.reverse_queries),2)
+    def test_previously_resolved_same_place_survives_a_later_school_map_outage(self):
+        account=fixed_account(reverse_geocode='')
+        self.assertEqual(self.run_mode('prepare',account)['result'],'dry_run_ready')
+        self.transport.address_data=None
+        out=self.run_mode('checkin',account)
+        self.assertEqual(out['result'],'confirmed');self.assertEqual(self.transport.post_count,1)
+        self.assertEqual(self.transport.last_payload['reverseGeocode'],'Address returned for configured coordinates')
 
     def test_address_lookup_failure_never_submits_or_claims(self):
         self.transport.reverse_failure = True

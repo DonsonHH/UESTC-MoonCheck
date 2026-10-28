@@ -135,7 +135,8 @@ class School:
                 value = data.get(key)
                 if isinstance(value, str) and value.strip():
                     return value
-        raise ToolError("reverse_geocode_unavailable", "reverse_geocode")
+        shape=('空值' if data is None else '空文本' if isinstance(data,str) else '不含有效地址的对象' if isinstance(data,dict) else '不支持的地址格式')
+        raise ToolError("reverse_geocode_unavailable", "reverse_geocode",0,http_status=200,school_message='学校地址接口返回'+shape)
 
     def submit(self, payload):
         return self.api("/student-checkin-record/checkin", stage="checkin_post", payload=payload)

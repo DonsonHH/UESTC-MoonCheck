@@ -545,11 +545,14 @@ class WebStore:
         return {'jobs':rows,'next_cursor':encode_cursor(*boundary) if more else None,'recent_since':cutoff}
 
     def record_job_event(self,job,event,values,account=None):
-        if event not in ('run_started','submission_action','submission_result','verification','run_error'):return
+        if event not in ('run_started','submission_action','submission_result','verification','run_error','geocode'):return
         with self.db(True) as db:
             row=db.execute('SELECT payload FROM web_job_diagnostics WHERE job_id=?',(job['id'],)).fetchone()
             value=json.loads(row['payload']) if row else {'action':'not_submitted','submission':None,'verification':[]}
-            if event=='submission_action':
+            if event=='geocode':
+                if values.get('source') in ('cache','school','cached_after_failure') and type(values.get('attempts')) is int and 0<=values['attempts']<=2:
+                    value['addressLookup']={'source':values['source'],'attempts':values['attempts']}
+            elif event=='submission_action':
                 action=values.get('action')
                 if isinstance(action,str) and action in ACTIONS:value['action']=action
                 value['submission']=submission_details(values.get('submission'),account)

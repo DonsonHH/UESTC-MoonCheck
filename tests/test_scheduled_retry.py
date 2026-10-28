@@ -59,7 +59,7 @@ class Retrying(unittest.TestCase):
    if attempt==0:
     self.assertEqual(job['state'],'queued');self.clock=self.clock.fromtimestamp(job['available_at'],self.clock.tzinfo)
   self.assertEqual(job['state'],'failed');self.assertEqual(job['result']['reason'],'reverse_geocode_unavailable')
-  self.assertTrue(job['result']['retryExhausted']);self.assertEqual(transport.post_count,0);self.assertEqual(len(transport.reverse_queries),2)
+  self.assertTrue(job['result']['retryExhausted']);self.assertEqual(transport.post_count,0);self.assertEqual(len(transport.reverse_queries),4)
  def test_manual_success_before_address_retry_skips_lookup_and_submission(self):
   worker,transport=self.geocode_worker()
   with patch('moonuestc.web_service.now',return_value=self.clock),patch('moonuestc.web_store.time.time',return_value=self.clock.timestamp()):worker.run_one()
@@ -68,7 +68,7 @@ class Retrying(unittest.TestCase):
   with patch('moonuestc.web_service.now',return_value=self.clock),patch('moonuestc.web_store.time.time',return_value=self.clock.timestamp()):worker.run_one()
   result=self.store.jobs(self.admin,self.job)['result']
   self.assertEqual(result['result'],'already_recorded');self.assertEqual(result['status'],'CHECKED_IN')
-  self.assertEqual(transport.post_count,0);self.assertEqual(len(transport.reverse_queries),1)
+  self.assertEqual(transport.post_count,0);self.assertEqual(len(transport.reverse_queries),2)
  def test_captcha_is_owner_action_not_an_automatic_retry(self):
   worker=WebWorker(self.store,runner=lambda *a,**kw:(_ for _ in ()).throw(ToolError('need_manual_captcha','cas_submit')))
   with patch('moonuestc.web_service.now',return_value=INSTANT):worker.run_one()

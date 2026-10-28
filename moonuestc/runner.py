@@ -11,6 +11,7 @@ from .diagnostics import error_details,submission_details,verification_details
 from .policy import TERMINAL, build_payload, check_fence, location_configured, location_source, now, valid_today, verified, window
 from .transport import Transport
 from .daily_plan import normalize_variation,verify_circle
+from .geocoding import resolve_address
 from .school_policy import SCHOOL_CLIENT_REASON, SCHOOL_CLIENT_MESSAGE, submission_rejection
 
 
@@ -152,7 +153,7 @@ def run_account(account, mode, state, directory, *, clock=now, sleep=time.sleep,
             verify_circle(base['latitude'],base['longitude'],variation['meters'],fences)
         address = payload["reverseGeocode"]
         if not address:
-            address = school.reverse_geocode(payload["latitude"], payload["longitude"])
+            address = resolve_address(school,account,payload,directory,clock=clock,sleep=sleep,emit=emit)
         payload["reverseGeocode"] = address
         win = window(school.schedule(), clock())
         checked_window=win
