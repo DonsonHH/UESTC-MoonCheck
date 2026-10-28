@@ -17,6 +17,7 @@ MAX_DISTANCE_METERS=25
 
 def valid_address(value):
     return (isinstance(value,str) and 0<len(value.strip())<=1000
+        and value.strip().casefold() not in ('null','undefined','none','nan','[object object]','[]')
         and not any(ord(c)<32 or c in '<>{}' for c in value))
 
 
@@ -72,27 +73,36 @@ def transient(error):
 
 def resolve_address(school,account,payload,directory,*,clock,sleep,emit=lambda *a,**k:None):
     point=(payload['latitude'],payload['longitude']);instant=clock();day=instant.date();scope=scope_for(account,instant)
+    def current():
+        instant=clock()
+        if instant.date()!=day:raise ToolError('business_date_changed','reverse_geocode')
+        if account.get('_job_deadline') and instant.timestamp()>=account['_job_deadline']:raise ToolError('reserved_slot_expired','reverse_geocode')
+        return instant
+    current()
     cache=cached=None
     try:
         cache=AddressCache(directory);cached=cache.load(scope,point,instant.timestamp())
     except (OSError,sqlite3.Error,ToolError,ValueError,TypeError):cache=None
-    if cached and instant.timestamp()-cached['fetched_at']<FRESH_SECONDS:
+    instant=current()
+    if cached and 0<=instant.timestamp()-cached['fetched_at']<FRESH_SECONDS:
         emit('geocode',source='cache',attempts=0);return cached['address']
     for attempt in range(2):
-        instant=clock()
-        if instant.date()!=day:raise ToolError('business_date_changed','reverse_geocode')
-        if account.get('_job_deadline') and instant.timestamp()>=account['_job_deadline']:raise ToolError('reserved_slot_expired','reverse_geocode')
+        instant=current()
         timeout=getattr(school.transport,'timeout',None)
         try:
-            if timeout is not None:school.transport.timeout=min(timeout,5)
+            if timeout is not None:
+                remaining=account['_job_deadline']-instant.timestamp() if account.get('_job_deadline') else 5
+                school.transport.timeout=min(timeout,5,remaining)
             address=school.reverse_geocode(*point)
             if not valid_address(address):raise ToolError('reverse_geocode_unavailable','reverse_geocode')
         except ToolError as error:
             if not transient(error):raise
-            if cached and 0<=clock().timestamp()-cached['fetched_at']<MAX_SECONDS:
+            instant=current()
+            if cached and 0<=instant.timestamp()-cached['fetched_at']<MAX_SECONDS:
                 emit('geocode',source='cached_after_failure',attempts=attempt+1);return cached['address']
             if attempt:raise
         else:
+            current()
             if cache:
                 try:cache.save(scope,point,address,clock().timestamp())
                 except (OSError,sqlite3.Error,ToolError,ValueError,TypeError):pass

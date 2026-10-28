@@ -84,3 +84,22 @@ class AddressResilience(unittest.TestCase):
         offline=School([None,None])
         with self.assertRaises(ToolError):self.resolve(offline)
         self.assertEqual(len(offline.calls),2)
+    def test_literal_empty_values_cannot_be_cached_as_a_real_address(self):
+        for value in ('null','undefined','[object Object]','[]'):
+            with self.subTest(value=value):
+                with AddressCache(self.directory).db() as db:db.execute('DELETE FROM map_addresses')
+                school=School([value,'Synthetic valid address'])
+                self.assertEqual(self.resolve(school),'Synthetic valid address')
+                self.assertEqual(len(school.calls),2)
+    def test_school_get_timeout_fits_remaining_reserved_slot(self):
+        self.account['_job_deadline']=self.instant.timestamp()+1.25;school=School(['Synthetic address'])
+        self.resolve(school)
+        self.assertLessEqual(school.calls[0][2],1.25,'A map GET must not use five seconds when the slot has only 1.25 seconds left')
+        self.assertEqual(school.transport.timeout,25)
+    def test_cache_read_cannot_return_after_reserved_slot_has_expired(self):
+        from unittest.mock import patch
+        self.seed();self.account['_job_deadline']=self.instant.timestamp()+0.5;load=AddressCache.load
+        def delayed(cache,*args):
+            value=load(cache,*args);self.instant+=dt.timedelta(seconds=1);return value
+        with patch.object(AddressCache,'load',delayed),self.assertRaises(ToolError) as caught:self.resolve(School([]))
+        self.assertEqual(caught.exception.reason,'reserved_slot_expired')
