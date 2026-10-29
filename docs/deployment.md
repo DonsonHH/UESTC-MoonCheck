@@ -21,6 +21,10 @@ helper 默认基于上一步主镜像；改用其他标签时传入 `--build-arg
 
 学生端回环端口由 `MOON_PORT` 设置，默认 8088；HTTPS 代理只转发这个端口。`MOON_PUBLIC_URL` 必须与浏览器实际地址一致。只将已知反向代理网段填入 `MOON_TRUSTED_PROXY_CIDRS`。
 
+`MOON_PUBLIC_URL` 使用 HTTPS 时，HTTP 页面、API 和回调请求会先以 308 跳转到该 HTTPS 来源，保留路径与参数。应用只信任 `MOON_TRUSTED_PROXY_CIDRS` 中实际连接方的协议标记；Cloudflare Tunnel 使用 `X-Forwarded-Proto` 或 `CF-Visitor` 的原始访客协议。Waitress 默认清理标准代理头时，后者仍可供可信连接核验。不要将所有来源都加入可信代理，否则可能允许伪造协议。
+
+容器内回环 `/healthz` 继续提供健康检查；SSH/Tailscale 私有管理端按独立的回环来源运行。公开端口仍只绑定主机回环，不需要新开公网端口或修改其他域名。
+
 管理端默认绑定 `127.0.0.1:4497`，通过 [私有管理转发](private-admin.md) 访问；不创建公开管理路由。helper 无宿主机公开端口。
 
 ## 微信操作票据

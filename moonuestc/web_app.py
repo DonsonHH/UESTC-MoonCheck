@@ -3,6 +3,7 @@ import functools
 import hashlib
 import hmac
 import ipaddress
+import json
 import os
 import re
 from pathlib import Path
@@ -81,10 +82,27 @@ def create_app(directory,public_url,*,allow_http=False,start_worker=False,runner
     trusted=trusted_proxies if trusted_proxies is not None else os.environ.get('MOON_TRUSTED_PROXY_CIDRS','').split(',')
     proxy_networks=[ipaddress.ip_network(value.strip()) for value in trusted if value.strip()]
 
+    def trusted_peer():
+        try:return any(ipaddress.ip_address(request.remote_addr or '') in network for network in proxy_networks)
+        except ValueError:return False
+
+    def https_request():
+        if trusted_peer():
+            forwarded=request.headers.get('X-Forwarded-Proto')
+            if forwarded is not None:return forwarded=='https'
+            # Waitress strips standard proxy headers by default. Cloudflare's
+            # visitor scheme remains available only from the configured peer.
+            visitor=request.headers.get('CF-Visitor')
+            if visitor is not None:
+                try:value=json.loads(visitor)
+                except (ValueError,TypeError):return False
+                return isinstance(value,dict) and value.get('scheme')=='https'
+        return request.is_secure
+
     def client_ip():
         remote=request.remote_addr or 'unknown'
         try:
-            if any(ipaddress.ip_address(remote) in network for network in proxy_networks):
+            if trusted_peer():
                 return str(ipaddress.ip_address(request.headers.get('CF-Connecting-IP','')))
         except ValueError:pass
         return remote
@@ -141,18 +159,29 @@ def create_app(directory,public_url,*,allow_http=False,start_worker=False,runner
 
     @app.before_request
     def checks():
-        if request.path=='/healthz': return None
+        if request.path=='/healthz':
+            try:
+                if ipaddress.ip_address(request.remote_addr or '').is_loopback:return None
+            except ValueError:pass
         path=request.path
-        if surface=='public' and (path=='/admin' or path.startswith(('/admin/','/api/admin/','/api/users','/api/portal/authorizations')) or path in ('/api/login','/api/me/password')):
-            raise WebError(404,'not_found','请求地址不存在。')
-        if surface=='admin' and (path.startswith(('/app','/api/onboarding/','/api/registration/')) or path in ('/register','/api/register','/api/portal/login','/api/portal/me')):
-            raise WebError(404,'not_found','请求地址不存在。')
         try:
             received=normalize_origin(('https' if secure else 'http')+'://'+request.host,not secure)
         except ToolError:
             received=None
         if received!=origin:
             raise WebError(400,'host_not_allowed','请使用配置的访问地址。')
+        if secure and not https_request():
+            raw=request.environ.get('RAW_URI') or request.environ.get('REQUEST_URI')
+            if isinstance(raw,str) and raw.startswith('/') and not any(ord(char)<32 for char in raw):
+                target=origin+raw
+            else:
+                target=origin+urllib.parse.quote(request.path,safe='/')
+                if request.query_string:target+='?'+request.query_string.decode('latin-1')
+            return redirect(target,code=308)
+        if surface=='public' and (path=='/admin' or path.startswith(('/admin/','/api/admin/','/api/users','/api/portal/authorizations')) or path in ('/api/login','/api/me/password')):
+            raise WebError(404,'not_found','请求地址不存在。')
+        if surface=='admin' and (path.startswith(('/app','/api/onboarding/','/api/registration/')) or path in ('/register','/api/register','/api/portal/login','/api/portal/me')):
+            raise WebError(404,'not_found','请求地址不存在。')
         if request.path.startswith('/api/') and request.method not in ('GET','HEAD','OPTIONS') and not re_qq_callback(request.path):
             try:
                 sent=normalize_origin(request.headers.get('Origin'),not secure)
